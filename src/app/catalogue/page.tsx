@@ -3,7 +3,7 @@ import { Catalogue } from "@/components/Catalogue";
 import { SiteHeader } from "@/components/SiteHeader";
 import { allCards, catalogueProps } from "@/lib/catalogue";
 
-export const metadata: Metadata = { title: "Catalogue · WikiMaster LoL" };
+export const metadata: Metadata = { title: "Catalogue" };
 
 export default function CataloguePage() {
   return (

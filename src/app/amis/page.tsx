@@ -3,7 +3,7 @@ import { Friends } from "@/components/Friends";
 import { SiteHeader } from "@/components/SiteHeader";
 import { catalogueProps } from "@/lib/catalogue";
 
-export const metadata: Metadata = { title: "Amis · WikiMaster LoL" };
+export const metadata: Metadata = { title: "Amis" };
 
 export default function Amis() {
   return (

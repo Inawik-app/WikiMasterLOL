@@ -36,7 +36,7 @@ Un fichier SQL numéroté par changement, appliqué à la main dans l'éditeur S
 
 ## Accès par ligne
 
-RLS activée sur toutes les tables. Lecture : tout joueur connecté lit tous les profils et toutes les collections, et ses propres amitiés. Écriture : aucune depuis le client ; seul le serveur écrit, avec la clé de service. Détail dans `SECURITY.md`.
+RLS activée sur toutes les tables. Lecture : un joueur connecté ne lit que ses propres lignes (profil, collection, amitiés). Tout ce qui concerne les autres joueurs passe par le serveur. Écriture : aucune depuis le client ; seul le serveur écrit, avec la clé de service. Détail dans `SECURITY.md`.
 
 ## Données personnelles
 

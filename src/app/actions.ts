@@ -68,7 +68,7 @@ export async function openBooster(): Promise<BoosterResult> {
   });
   if (error) {
     if (error.message.includes("no_booster")) return { ok: false, reason: "empty" };
-    console.error("open_booster failed:", error.message);
+    console.error("open_booster failed:", error.code);
     return { ok: false, reason: "unavailable" };
   }
 
@@ -103,7 +103,7 @@ export async function claimSeal(): Promise<SealResult> {
   const { error } = await s.admin.rpc("claim_seal", { p_user: s.user.id, p_day: day, p_card: cardId, p_essence: essence });
   if (error) {
     if (error.message.includes("no_seal")) return { ok: false, reason: "not-ready" };
-    console.error("claim_seal failed:", error.message);
+    console.error("claim_seal failed:", error.code);
     return { ok: false, reason: "unavailable" };
   }
   return { ok: true, card: cardId ? toFaceCard(cardById().get(cardId)!) : null, essence };
@@ -118,7 +118,7 @@ async function pay(admin: SupabaseClient, userId: string, cardId: string, rarity
   if (error) {
     if (error.message.includes("not_enough_essence")) return { ok: false, reason: "not-enough" };
     if (error.code === "23505") return { ok: false, reason: "owned" }; // unique violation
-    console.error("spend_essence failed:", error.message);
+    console.error("spend_essence failed:", error.code);
     return { ok: false, reason: "unavailable" };
   }
   return { ok: true, card: toFaceCard(cardById().get(cardId)!) };
@@ -224,7 +224,7 @@ export async function addFriend(friendId: string): Promise<{ ok: boolean }> {
     { user_id: s.user.id, friend_id: friendId },
     { user_id: friendId, friend_id: s.user.id },
   ]);
-  if (error) console.error("addFriend failed:", error.message); // an unknown id breaks the foreign key
+  if (error) console.error("addFriend failed:", error.code); // an unknown id breaks the foreign key
   return { ok: !error };
 }
 
@@ -236,6 +236,18 @@ export async function removeFriend(friendId: string): Promise<{ ok: boolean }> {
     .from("friendships")
     .delete()
     .or(`and(user_id.eq.${s.user.id},friend_id.eq.${friendId}),and(user_id.eq.${friendId},friend_id.eq.${s.user.id})`);
-  if (error) console.error("removeFriend failed:", error.message);
+  if (error) console.error("removeFriend failed:", error.code);
   return { ok: !error };
+}
+
+// --- Account -------------------------------------------------------------------
+
+// Erases the player for good. Deleting the sign-in account removes the profile, and with it
+// the collection and the friendships (cascading foreign keys).
+export async function deleteAccount(): Promise<{ ok: true } | { ok: false; reason: "signed-out" | "unavailable" }> {
+  const s = await session();
+  if (s.failure) return { ok: false, reason: s.failure };
+  const { error } = await s.admin.auth.admin.deleteUser(s.user.id);
+  if (error) console.error("deleteAccount failed:", error.code);
+  return error ? { ok: false, reason: "unavailable" } : { ok: true };
 }

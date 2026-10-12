@@ -13,7 +13,7 @@ const count = new Intl.NumberFormat("fr-FR");
 function Who({ player, detail }: { player: Player; detail?: string }) {
   return (
     <>
-      {player.avatar && <img src={player.avatar} alt="" className="user__avatar" />}
+      {player.avatar && <img src={player.avatar} alt="" width={36} height={36} loading="lazy" className="user__avatar" />}
       <p className="players__name">
         {player.username}
         {detail && <span>{detail}</span>}

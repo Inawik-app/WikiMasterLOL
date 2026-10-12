@@ -22,9 +22,11 @@ Supabase Auth, session en cookie via `@supabase/ssr`. Décidé le 2026-10-12 :
 | Rôle | Peut lire | Peut modifier |
 |---|---|---|
 | Visiteur non connecté | le catalogue des cartes, public par nature | rien |
-| Joueur connecté | tous les profils et collections | rien directement ; ouvre des boosters, ajoute ou retire un ami via le serveur |
+| Joueur connecté | son profil, sa collection, ses amitiés ; via le serveur : la liste des joueurs, la collection de ses amis, les découvreurs des cartes rares | rien directement ; ouvre des boosters, ajoute ou retire un ami, supprime son compte via le serveur |
 
-L'interface ne montre la collection d'un autre joueur que s'il est ami (vérifié dans la Server Action). Ce n'est pas un secret au sens de la base : RLS laisse tout joueur connecté lire les collections.
+La collection d'un autre joueur n'est lisible que s'il est ami : vérifié dans la Server Action, et RLS ne laisse lire que ses propres lignes. L'amitié ne demande pas d'accord : c'est dit dans les mentions légales.
+
+Le site est ouvert à tout compte Discord. Mentions légales, confidentialité et règles sont sur `/mentions-legales` ; la suppression du compte s'y fait en un clic (`deleteAccount`). L'adresse de contact vient de `NEXT_PUBLIC_CONTACT_EMAIL`. Les moteurs de recherche sont écartés (`robots` dans `layout.tsx`). En-têtes de sécurité dans `next.config.ts`, sans CSP complète.
 
 Le droit est vérifié dans la Server Action (qui est connecté, a-t-il un booster disponible) et verrouillé par RLS : aucune politique d'écriture pour les clients.
 

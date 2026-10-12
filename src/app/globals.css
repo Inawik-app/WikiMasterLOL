@@ -859,6 +859,67 @@
     opacity: 0.45;
   }
 
+  /* --- Legal page and footer ---------------------------------------------- */
+
+  .legal {
+    display: grid;
+    gap: 2.5rem;
+    max-width: 68ch;
+    font-size: 1.1rem;
+    line-height: 1.55;
+    color: var(--color-mist);
+  }
+  .legal section {
+    display: grid;
+    gap: 0.9rem;
+    justify-items: start;
+  }
+  .legal h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    letter-spacing: 0.02em;
+    color: var(--color-ivory);
+  }
+  .legal ul {
+    display: grid;
+    gap: 0.5rem;
+    padding-left: 1.2rem;
+    list-style: square;
+  }
+  .legal li::marker {
+    color: var(--color-brass);
+  }
+  .legal a,
+  .sitefoot a {
+    color: var(--color-ivory);
+    text-decoration: underline;
+    text-decoration-color: var(--color-brass);
+    text-underline-offset: 0.2em;
+  }
+  .legal a:hover,
+  .sitefoot a:hover {
+    color: var(--color-brass);
+  }
+  .sitefoot {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.75rem 2rem;
+    padding: 1.5rem clamp(1rem, 4vw, 3.5rem) 2rem;
+    border-top: 1px solid color-mix(in oklab, var(--color-brass) 35%, transparent);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: var(--color-mist);
+  }
+  .sitefoot p {
+    max-width: 60ch;
+  }
+  .sitefoot a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+  }
+
   /* --- Friends ------------------------------------------------------------ */
 
   .players {
@@ -1235,6 +1296,16 @@
     .user__signout {
       padding: 0.4rem 0.6rem;
       font-size: 0.9rem;
+    }
+    /* Big enough for a thumb. */
+    .user__signout,
+    .user__signin,
+    .forge__secondary,
+    .players__remove,
+    .sitenav a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 2.75rem;
     }
     .sitenav {
       order: 1;

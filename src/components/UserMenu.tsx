@@ -46,7 +46,7 @@ export function UserMenu() {
 
   return (
     <div className="user">
-      {user.user_metadata.avatar_url && <img src={user.user_metadata.avatar_url} alt="" className="user__avatar" />}
+      {user.user_metadata.avatar_url && <img src={user.user_metadata.avatar_url} alt="" width={36} height={36} className="user__avatar" />}
       <span className="user__name">{displayName(user)}</span>
       <button type="button" className="user__signout" onClick={() => supabase.auth.signOut()}>
         Se déconnecter

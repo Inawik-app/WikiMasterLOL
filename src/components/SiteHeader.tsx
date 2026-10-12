@@ -9,7 +9,7 @@ const PAGES = [
 ] as const;
 
 // The bar shared by every page: name of the game, the places to go, the account.
-export function SiteHeader({ current }: { current: (typeof PAGES)[number][0] }) {
+export function SiteHeader({ current }: { current?: (typeof PAGES)[number][0] }) {
   return (
     <div className="masthead__bar">
       <p className="masthead__mark">WikiMaster LoL</p>
