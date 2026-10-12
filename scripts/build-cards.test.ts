@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { championRarity, check, skinRarity } from "./build-cards.ts";
+import { championRarity, check, decodeEntities, playerRarity, skinRarity, songRarity, teamRarity } from "./build-cards.ts";
 
 test("skin rarity adds up Riot tier, availability and age", () => {
   assert.equal(skinRarity(12001, "kNoRarity", { availability: "Limited", release: "2009-06-13" }), "ultimate"); // Black Alistar
@@ -25,6 +25,40 @@ test("most picked champions are the rarest", () => {
   assert.equal(championRarity(0, 100), "rare");
   assert.equal(championRarity(30, 100), "uncommon");
   assert.equal(championRarity(99, 100), "common");
+});
+
+test("teams rank by titles, then by the level of their league", () => {
+  assert.equal(teamRarity("T1", "LCK"), "transcendent");
+  assert.equal(teamRarity("Fnatic", "LEC"), "ultimate");
+  assert.equal(teamRarity("G2 Esports", "LEC"), "epic");
+  assert.equal(teamRarity("Solary", "La Ligue Française"), "rare");
+  assert.equal(teamRarity("Some Team", "Liga Portuguesa"), "uncommon");
+});
+
+test("players rank by league, hand-picked names above", () => {
+  assert.equal(playerRarity("Faker", "LCK"), "transcendent");
+  assert.equal(playerRarity("Caps", "LEC"), "ultimate");
+  assert.equal(playerRarity("Caliste", "LEC"), "mythic");
+  // A hand-picked name also counts in a recognised regional league.
+  assert.equal(playerRarity("Saken", "La Ligue Française"), "legendary");
+  assert.equal(playerRarity("Someone", "LEC"), "rare");
+  assert.equal(playerRarity("Someone", "La Ligue Française"), "uncommon");
+  assert.equal(playerRarity("Someone", "Liga Portuguesa"), "common");
+  // A namesake outside the major leagues is not promoted.
+  assert.equal(playerRarity("Faker", "Liga Portuguesa"), "common");
+});
+
+test("the most watched anthems are the rarest", () => {
+  assert.equal(songRarity(457_000_000), "transcendent");
+  assert.equal(songRarity(317_000_000), "ultimate");
+  assert.equal(songRarity(157_000_000), "legendary");
+  assert.equal(songRarity(36_000_000), "epic");
+  assert.equal(songRarity(19_000_000), "rare");
+});
+
+test("HTML entities become characters", () => {
+  assert.equal(decodeEntities("«&nbsp;Tu ne veux pas l'utiliser&nbsp;?&nbsp;»"), "«\u00a0Tu ne veux pas l'utiliser\u00a0?\u00a0»");
+  assert.equal(decodeEntities("caf&eacute; &amp; th&#233; &#x2014; &unknown;"), "café & thé — &unknown;");
 });
 
 test("check rejects duplicate ids and broken cards", () => {

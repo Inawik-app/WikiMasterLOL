@@ -38,7 +38,7 @@ Lire le document du domaine touché avant de le modifier. Pas les autres.
 
 ## Interdits
 
-- Ne jamais éditer `src/data/cards.json` à la main : il est généré par `npm run cards`.
+- Ne jamais éditer `src/data/cards.json` ni `public/emblems/` à la main : ils sont générés par `npm run cards`. Les cartes écrites à la main vivent dans `scripts/handmade.ts`.
 - Le tirage d'un booster ne se fait jamais côté client.
 - La clé `SUPABASE_SERVICE_ROLE_KEY` ne quitte jamais le serveur (pas de préfixe `NEXT_PUBLIC_`).
 - Ne pas copier les images Riot dans le dépôt : elles sont servies depuis leurs CDN.

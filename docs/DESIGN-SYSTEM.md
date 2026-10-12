@@ -65,6 +65,7 @@ Angles presque vifs : rayon de 2 à 4 px partout, jamais de pilule. Ombres port�
   - icône (compétences, sorts d'invocateur, runes, objets) : l'icône garde sa taille, sertie sur un fond flou de ses propres couleurs ;
   - paysage (`card--landscape` : récits, vidéos, bandes dessinées, régions) : l'image dans une fenêtre large, cadrée sur son point d'intérêt, au lieu d'un recadrage étroit ;
   - encadrée (`card--framed`) : skins qui ont en jeu une bordure spéciale ou une signature de joueur pro ; l'illustration d'écran de chargement entière, avec les calques officiels par-dessus ;
+  - emblème : les cartes sans illustration officielle (serveurs, personnalités, modes et monstres disparus) portent quelques lettres frappées sur une plaque de forge, dessinées par `npm run cards` ; les seules photos de personnes réelles sont les portraits officiels des joueurs e-sport ;
   - grande (`card--large`) ;
   - mystère (`card--locked`) : cadre et gemme seuls, ni image ni nom.
 - **Râtelier** (`rack`) : les huit gemmes sur un rail de laiton, filtre de rareté avec compteurs.

@@ -4,18 +4,21 @@ import { Gem } from "./Gem";
 
 export type FaceCard = Pick<
   Card,
-  "id" | "type" | "name" | "rarity" | "image" | "splash" | "subtitle" | "flavor" | "url" | "facts" | "frames" | "focus"
+  "id" | "type" | "name" | "rarity" | "image" | "splash" | "subtitle" | "flavor" | "url" | "facts" | "frames" | "focus" | "icon"
 >;
 
 const fromLor = (card: FaceCard) => card.image.includes("dd.b.pvp.net");
 
 // These types only have a 64px icon: it is set in a socket instead of being stretched.
 const ICON_TYPES = new Set(["ability", "summoner", "rune", "item"]);
-const isIcon = (card: FaceCard) => ICON_TYPES.has(card.type) && !fromLor(card);
+const isIcon = (card: FaceCard) => card.icon || (ICON_TYPES.has(card.type) && !fromLor(card));
+
+// Authored emblems (cards without official art) are already card-shaped.
+const isEmblem = (card: FaceCard) => card.image.startsWith("/emblems/");
 
 // Art that only exists in landscape: shown in a wide window rather than cropped to a sliver.
-const LANDSCAPE_TYPES = new Set(["story", "video", "comic", "region"]);
-const isLandscape = (card: FaceCard) => LANDSCAPE_TYPES.has(card.type);
+const LANDSCAPE_TYPES = new Set(["story", "video", "comic", "region", "song", "map", "mode"]);
+const isLandscape = (card: FaceCard) => LANDSCAPE_TYPES.has(card.type) && !isEmblem(card);
 
 // Cards whose full artwork is wide enough to deserve the whole dialog when opened.
 export const isWide = (card: FaceCard) =>

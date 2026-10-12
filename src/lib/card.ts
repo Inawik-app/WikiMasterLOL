@@ -25,7 +25,19 @@ export type CardType =
   | "spell"
   | "story"
   | "video"
-  | "comic";
+  | "comic"
+  | "team"
+  | "player"
+  | "competition"
+  | "person"
+  | "creator"
+  | "song"
+  | "tft"
+  | "server"
+  | "lane"
+  | "monster"
+  | "map"
+  | "mode";
 
 export type Chroma = { id: number; name: string; colors: string[] };
 
@@ -44,6 +56,8 @@ export type Card = {
   facts?: [string, string][];
   // Overlays drawn over the art: special borders, pro player signatures.
   frames?: string[];
+  // The image is a small icon or a logo: set in a socket instead of filling the card.
+  icon?: boolean;
   // CSS object-position for art that must be cropped.
   focus?: string;
   chromas?: Chroma[];
@@ -74,4 +88,16 @@ export const TYPE_LABEL: Record<CardType, string> = {
   story: "Récits",
   video: "Vidéos",
   comic: "Bandes dessinées",
+  team: "Équipes",
+  player: "Joueurs",
+  competition: "Compétitions",
+  person: "Personnalités",
+  creator: "Créateurs",
+  song: "Musiques",
+  tft: "Teamfight Tactics",
+  server: "Serveurs",
+  lane: "Voies",
+  monster: "Monstres",
+  map: "Cartes de jeu",
+  mode: "Modes de jeu",
 };
