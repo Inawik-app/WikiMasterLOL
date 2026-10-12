@@ -1,8 +1,11 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element -- hotlinked Riot art, see CardFace */
-import { type PointerEvent, useEffect, useMemo, useRef, useState } from "react";
+import { type PointerEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { buyCard, collectionState, type CollectionState } from "@/app/actions";
 import { type CardType, RARITIES, RARITY_LABEL, type Rarity, TYPE_LABEL } from "@/lib/card";
+import { isSecret, PRICE, SECRET_RARITIES } from "@/lib/forge";
+import { createClient } from "@/lib/supabase/client";
 import { CardFace, cardClass, cardLabel, type FaceCard, isWide, thumb } from "./CardFace";
 import { Gem, GemDefs } from "./Gem";
 
@@ -27,6 +30,12 @@ const fold = (text: string) =>
     .toLowerCase();
 
 const count = new Intl.NumberFormat("fr-FR");
+
+// One cell of the grid: a card the player may see, or a secret one nobody has found yet.
+type Item =
+  | { kind: "card"; key: string; rarity: Rarity; card: FaceCard; owned: boolean; found: boolean; by?: string }
+  | { kind: "secret"; key: string; rarity: Rarity };
+type CardItem = Extract<Item, { kind: "card" }>;
 
 // What the opened card says about itself.
 function CardInfo({ card }: { card: FaceCard }) {
@@ -67,33 +76,101 @@ function CardInfo({ card }: { card: FaceCard }) {
   );
 }
 
-export function Catalogue({ cards }: { cards: FaceCard[] }) {
+// `cards` holds every card below legendary. The rarer ones are secret: the page only knows
+// how many exist (`secretTotals`) until the server says which ones the group has found.
+// `view` "collection" keeps only the cards the player owns, or the ones `friend` owns.
+export function Catalogue({
+  cards,
+  secretTotals,
+  view = "catalogue",
+  friend,
+}: {
+  cards: FaceCard[];
+  secretTotals: Record<Rarity, number>;
+  view?: "catalogue" | "collection";
+  friend?: { id: string; username: string };
+}) {
+  const mine = view === "collection";
   const [type, setType] = useState<CardType | "all">("all");
   const [rarity, setRarity] = useState<Rarity | null>(null);
   const [query, setQuery] = useState("");
-  const [mystery, setMystery] = useState(false);
+  const [foundOnly, setFoundOnly] = useState(false);
   const [limit, setLimit] = useState(PAGE);
-  const [opened, setOpened] = useState<FaceCard | null>(null);
+  const [opened, setOpened] = useState<CardItem | null>(null);
   const [artOnly, setArtOnly] = useState(false);
+  const [buying, setBuying] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  // undefined: not known yet. null: signed out, or the collection cannot be read; the catalogue
+  // then shows as a plain catalogue.
+  const [state, setState] = useState<CollectionState | null | undefined>(undefined);
+  const [supabase] = useState(createClient);
   const dialog = useRef<HTMLDialogElement>(null);
   const sentinel = useRef<HTMLDivElement>(null);
 
-  const searchIndex = useMemo(() => cards.map((c) => fold(`${c.name} ${c.subtitle ?? ""}`)), [cards]);
+  // If the collection cannot be read, the page stays a plain catalogue.
+  const friendId = friend?.id;
+  const refresh = useCallback(async () => setState(await collectionState(friendId).catch(() => null)), [friendId]);
+  useEffect(() => {
+    if (!supabase) return;
+    // Read the collection again whenever the player signs in or out.
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) refresh();
+      else setState(null);
+    });
+    return () => data.subscription.unsubscribe();
+  }, [supabase, refresh]);
 
-  // Rarity counts follow the type and search filters, so the rack shows the pyramid of what is on screen.
-  const byTypeAndQuery = useMemo(() => {
+  const items = useMemo(() => {
+    const owned = new Set(state?.owned);
+    const discovered = new Set(state?.discovered);
+    const list: Item[] = [];
+    const found: Partial<Record<Rarity, number>> = {};
+    for (const { card, by } of state?.revealed ?? []) {
+      found[card.rarity] = (found[card.rarity] ?? 0) + 1;
+      list.push({ kind: "card", key: card.id, rarity: card.rarity, card, owned: owned.has(card.id), found: true, by });
+    }
+    for (const r of SECRET_RARITIES) {
+      for (let i = found[r] ?? 0; i < secretTotals[r]; i++) list.push({ kind: "secret", key: `${r}-${i}`, rarity: r });
+    }
+    // Signed out, nothing is "missing": the page is a plain catalogue.
+    for (const card of cards) {
+      list.push({
+        kind: "card",
+        key: card.id,
+        rarity: card.rarity,
+        card,
+        owned: state ? owned.has(card.id) : true,
+        found: discovered.has(card.id),
+      });
+    }
+    // Rarest first; within a rarity, found cards come before the silhouettes.
+    return list.sort((a, b) => RARITIES.indexOf(b.rarity) - RARITIES.indexOf(a.rarity));
+  }, [cards, secretTotals, state]);
+
+  const searchIndex = useMemo(
+    () => new Map(items.map((it) => [it.key, it.kind === "card" ? fold(`${it.card.name} ${it.card.subtitle ?? ""}`) : ""])),
+    [items],
+  );
+
+  // Rarity counts follow the other filters, so the rack shows the pyramid of what is on screen.
+  const beforeRarity = useMemo(() => {
     const q = fold(query.trim());
-    return cards.filter((c, i) => (type === "all" || c.type === type) && (!q || searchIndex[i].includes(q)));
-  }, [cards, searchIndex, type, query]);
+    return items.filter((it) => {
+      if (it.kind === "secret") return type === "all" && !q && !mine && !foundOnly; // a silhouette has no type and no name
+      if (mine ? !it.owned : foundOnly && !it.found) return false;
+      return (type === "all" || it.card.type === type) && (!q || searchIndex.get(it.key)!.includes(q));
+    });
+  }, [items, searchIndex, type, query, mine, foundOnly]);
 
   const rarityCount = useMemo(() => {
     const counts = Object.fromEntries(RARITIES.map((r) => [r, 0])) as Record<Rarity, number>;
-    for (const c of byTypeAndQuery) counts[c.rarity]++;
+    for (const it of beforeRarity) counts[it.rarity]++;
     return counts;
-  }, [byTypeAndQuery]);
+  }, [beforeRarity]);
 
-  const results = rarity ? byTypeAndQuery.filter((c) => c.rarity === rarity) : byTypeAndQuery;
+  const results = rarity ? beforeRarity.filter((it) => it.rarity === rarity) : beforeRarity;
   const shown = results.slice(0, limit);
+  const total = cards.length + SECRET_RARITIES.reduce((n, r) => n + secretTotals[r], 0);
 
   // Load the next page when the end of the grid comes near. Re-created after each page
   // so it fires again if the sentinel is still in view.
@@ -108,10 +185,30 @@ export function Catalogue({ cards }: { cards: FaceCard[] }) {
     return () => observer.disconnect();
   }, [limit, results.length]);
 
-  const open = (card: FaceCard) => {
-    setOpened(card);
+  const open = (item: CardItem) => {
+    setOpened(item);
     setArtOnly(false);
+    setNotice(null);
     dialog.current?.showModal();
+  };
+
+  const buy = async (item: CardItem) => {
+    setBuying(true);
+    setNotice(null);
+    const result = await buyCard(item.card.id);
+    if (result.ok) {
+      setOpened({ ...item, owned: true });
+    } else {
+      setNotice(
+        result.reason === "not-enough"
+          ? "Tu n'as pas assez d'essence."
+          : result.reason === "owned"
+            ? "Tu as déjà cette carte."
+            : "L'achat n'a pas abouti. Réessaie dans un instant.",
+      );
+    }
+    await refresh();
+    setBuying(false);
   };
 
   // The opened card leans toward the pointer and catches the light of its gem.
@@ -129,7 +226,38 @@ export function Catalogue({ cards }: { cards: FaceCard[] }) {
     for (const name of ["--tilt-x", "--tilt-y", "--light-x", "--light-y"]) event.currentTarget.style.removeProperty(name);
   };
 
-  const wide = opened !== null && isWide(opened);
+  const wide = opened !== null && isWide(opened.card);
+
+  // Where the opened card stands in the player's collection, and what they can do about it.
+  const ownership = opened && state && !friend && (
+    <div className="anvil__own">
+      {opened.owned ? (
+        <p>Dans ta collection{opened.by ? ` · découverte par ${opened.by}` : ""}</p>
+      ) : isSecret(opened.card.rarity) ? (
+        <p>Découverte par {opened.by}. À trouver dans un booster ou à la forge.</p>
+      ) : (
+        <>
+          <button
+            type="button"
+            className="anvil__buy"
+            disabled={buying || state.essence < PRICE[opened.card.rarity]}
+            onClick={() => buy(opened)}
+          >
+            {buying ? "Achat…" : `Acheter · ${count.format(PRICE[opened.card.rarity])} essence`}
+          </button>
+          <p>Tu as {count.format(state.essence)} essence.</p>
+        </>
+      )}
+      {notice && <p role="alert">{notice}</p>}
+    </div>
+  );
+
+  // The collection needs a player: nothing to show before the answer, a word of help after.
+  if (mine && !state) {
+    return state === null || !supabase ? (
+      <p className="empty">Connecte-toi avec Discord, en haut de la page, pour voir ta collection.</p>
+    ) : null;
+  }
 
   return (
     <>
@@ -197,33 +325,69 @@ export function Catalogue({ cards }: { cards: FaceCard[] }) {
       <div className="tally">
         <p aria-live="polite">
           <strong>{count.format(results.length)}</strong> {results.length > 1 ? "cartes" : "carte"}
+          {state && (
+            <span>
+              {" "}
+              · {friend ? `${friend.username} en possède` : "tu en possèdes"} {count.format(state.owned.length)} sur{" "}
+              {count.format(total)}
+            </span>
+          )}
         </p>
-        <button type="button" className="switch" aria-pressed={mystery} onClick={() => setMystery(!mystery)}>
-          <span className="switch__track" aria-hidden="true" />
-          Aperçu mystère
-        </button>
+        {state && !mine && (
+          <button
+            type="button"
+            className="switch"
+            aria-pressed={foundOnly}
+            onClick={() => {
+              setFoundOnly(!foundOnly);
+              setLimit(PAGE);
+            }}
+          >
+            <span className="switch__track" aria-hidden="true" />
+            Découvertes par les joueurs
+          </button>
+        )}
       </div>
 
       {results.length ? (
         <ul className="grid-cards">
-          {shown.map((card) => (
-            <li key={card.id}>
-              <button
-                type="button"
-                className={cardClass(card, { locked: mystery })}
-                data-rarity={card.rarity}
-                aria-label={cardLabel(card, mystery)}
-                disabled={mystery}
-                onClick={() => open(card)}
-              >
-                <CardFace card={card} locked={mystery} />
-              </button>
-            </li>
-          ))}
+          {shown.map((item) =>
+            item.kind === "secret" ? (
+              <li key={item.key}>
+                <div
+                  className="card card--locked"
+                  data-rarity={item.rarity}
+                  role="img"
+                  aria-label={`Carte inconnue, ${RARITY_LABEL[item.rarity]}`}
+                >
+                  <span className="card__art">
+                    <Gem rarity={item.rarity} className="card__sigil" />
+                  </span>
+                  <Gem rarity={item.rarity} className="card__gem" />
+                </div>
+              </li>
+            ) : (
+              <li key={item.key}>
+                <button
+                  type="button"
+                  className={`${cardClass(item.card)}${item.owned ? "" : " card--missing"}`}
+                  data-rarity={item.rarity}
+                  aria-label={`${cardLabel(item.card)}${item.owned ? "" : ", pas encore dans ta collection"}`}
+                  onClick={() => open(item)}
+                >
+                  <CardFace card={item.card} />
+                </button>
+              </li>
+            ),
+          )}
         </ul>
       ) : (
         <p className="empty">
-          Aucune carte ne sort de la forge avec ces réglages. Retire un filtre ou essaie un autre nom.
+          {mine && !state?.owned.length
+            ? friend
+              ? `${friend.username} n'a encore aucune carte.`
+              : "Ta collection est vide. Ouvre ton premier booster à la forge."
+            : "Aucune carte ne sort de la forge avec ces réglages. Retire un filtre ou essaie un autre nom."}
         </p>
       )}
       {shown.length < results.length && <div ref={sentinel} className="sentinel" aria-hidden="true" />}
@@ -239,17 +403,18 @@ export function Catalogue({ cards }: { cards: FaceCard[] }) {
           <>
             {/* The whole artwork, uncropped. The text sits over its right edge and can be put away. */}
             <figure className="anvil__art" onPointerMove={tilt} onPointerLeave={rest}>
-              <img src={thumb(opened.splash ?? opened.image, 1600)} alt="" />
+              <img src={thumb(opened.card.splash ?? opened.card.image, 1600)} alt="" />
               <span className="card__light" />
             </figure>
             <Gem rarity={opened.rarity} className="anvil__gem" />
             <div className="anvil__info">
-              {opened.frames && (
-                <div className={`${cardClass(opened)} anvil__mini`} data-rarity={opened.rarity}>
-                  <CardFace card={opened} />
+              {opened.card.frames && (
+                <div className={`${cardClass(opened.card)} anvil__mini`} data-rarity={opened.rarity}>
+                  <CardFace card={opened.card} />
                 </div>
               )}
-              <CardInfo card={opened} />
+              <CardInfo card={opened.card} />
+              {ownership}
             </div>
             <button type="button" className="anvil__toggle" onClick={() => setArtOnly(!artOnly)}>
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -264,13 +429,14 @@ export function Catalogue({ cards }: { cards: FaceCard[] }) {
         {opened && !wide && (
           <>
             <div className="anvil__stage" onPointerMove={tilt} onPointerLeave={rest}>
-              <div className={cardClass(opened, { large: true })} data-rarity={opened.rarity}>
-                <CardFace card={opened} large />
+              <div className={cardClass(opened.card, { large: true })} data-rarity={opened.rarity}>
+                <CardFace card={opened.card} large />
                 <span className="card__light" />
               </div>
             </div>
             <div className="anvil__info">
-              <CardInfo card={opened} />
+              <CardInfo card={opened.card} />
+              {ownership}
             </div>
           </>
         )}

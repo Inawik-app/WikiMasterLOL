@@ -88,11 +88,19 @@
     column-gap: 2rem;
     padding: 1.25rem 0 clamp(1.5rem, 4vw, 2.75rem);
   }
-  .masthead__mark {
+  .masthead__bar {
     grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1.5rem;
+    min-height: 3.5rem;
     margin-bottom: clamp(1.75rem, 5vw, 3.5rem);
-    padding-bottom: 1rem;
+    padding-bottom: 0.75rem;
     border-bottom: 1px solid color-mix(in oklab, var(--color-brass) 35%, transparent);
+  }
+  .masthead__mark {
     font-family: var(--font-display);
     font-size: 1.05rem;
     letter-spacing: 0.14em;
@@ -114,6 +122,72 @@
     line-height: 1.4;
     color: var(--color-mist);
     text-wrap: pretty;
+  }
+
+  .sitenav {
+    display: flex;
+    gap: 0.25rem;
+    margin-right: auto;
+  }
+  .sitenav a {
+    padding: 0.4rem 0.75rem;
+    border-radius: 2px;
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--color-mist);
+    transition: color 0.2s, background-color 0.2s;
+  }
+  .sitenav a:hover {
+    color: var(--color-ivory);
+    background: var(--color-forge-800);
+  }
+  .sitenav a[aria-current="page"] {
+    color: var(--color-ivory);
+    box-shadow: inset 0 -2px 0 var(--color-brass);
+  }
+
+  /* --- Account ----------------------------------------------------------- */
+
+  .user {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1rem;
+  }
+  .user p {
+    color: var(--color-ember);
+  }
+  .user__avatar {
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 1px solid var(--color-brass-dim);
+    border-radius: 2px;
+    object-fit: cover;
+  }
+  .user__name {
+    font-weight: 600;
+  }
+  .user__signin {
+    padding: 0.55rem 1rem;
+    border-radius: 2px;
+    background: var(--color-ember);
+    font-weight: 600;
+    color: var(--color-forge-950);
+    transition: background-color 0.2s;
+  }
+  .user__signin:hover {
+    background: color-mix(in oklab, var(--color-ember) 80%, white);
+  }
+  .user__signout {
+    padding: 0.45rem 0.8rem;
+    border: 1px solid var(--color-forge-700);
+    border-radius: 2px;
+    color: var(--color-mist);
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .user__signout:hover {
+    border-color: var(--color-brass-dim);
+    color: var(--color-ivory);
   }
 
   /* --- Rarity rack: eight gems resting on a brass rail ------------------- */
@@ -477,6 +551,21 @@
     60%, to { translate: 45% 0; }
   }
 
+  /* Not in the player's collection yet: the art is there, but unlit. */
+  .card--missing .card__art img {
+    filter: grayscale(0.85) brightness(0.5);
+  }
+  .card--missing .card__plate {
+    color: var(--color-mist);
+  }
+  .card--missing .card__gem {
+    opacity: 0.55;
+  }
+  .card--missing .card__art::before,
+  .card--missing .card__art::after {
+    display: none;
+  }
+
   /* Mystery silhouette: the frame and the gem, nothing else. */
   .card--locked .card__art {
     background:
@@ -490,6 +579,334 @@
   .card__sigil {
     width: 46%;
     opacity: 0.3;
+  }
+
+  /* --- Boosters ---------------------------------------------------------- */
+
+  .stock {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem 2rem;
+    padding: 1.1rem 0;
+    border-block: 1px solid color-mix(in oklab, var(--color-brass) 35%, transparent);
+    font-size: 1.1rem;
+    color: var(--color-mist);
+  }
+  .stock strong {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    font-weight: 400;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-ivory);
+  }
+  .stock__pips {
+    display: flex;
+    gap: 0.4rem;
+  }
+  /* One hexagonal cell per booster the stock can hold; lit when it is ready. */
+  .stock__pip {
+    width: 1.5rem;
+    aspect-ratio: 1 / 1.1;
+    clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+    background: var(--color-forge-700);
+    transition: background-color 0.4s var(--ease-forge);
+  }
+  .stock__pip[data-full="true"] {
+    background: var(--color-hextech);
+  }
+  .stock__essence {
+    margin-left: auto;
+  }
+
+  .pack {
+    padding-top: clamp(2rem, 5vw, 3.5rem);
+  }
+  .pack__cards {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 12rem));
+    justify-content: center;
+    gap: clamp(0.6rem, 2vw, 1.5rem);
+    perspective: 1200px;
+  }
+  /* A single card (seal reward, forge) sits alone in the middle. */
+  .pack__cards[data-count="1"] {
+    grid-template-columns: minmax(0, 14rem);
+  }
+  .pack__note {
+    display: grid;
+    gap: 0.1rem;
+    margin-top: 0.9rem;
+    font-size: 0.95rem;
+    text-align: center;
+    color: var(--color-mist);
+  }
+  .pack__note span {
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: color-mix(in oklab, var(--gem) 70%, white);
+  }
+  .pack__summary {
+    margin-top: 2rem;
+    font-size: 1.1rem;
+    text-align: center;
+    color: var(--color-mist);
+  }
+
+  /* Face down: brass, no hint of what is underneath. */
+  .card--back {
+    --gem: var(--color-brass-dim);
+  }
+  .card--back .card__art {
+    background:
+      radial-gradient(70% 55% at 50% 45%, rgb(90 215 230 / 0.12), transparent),
+      var(--color-forge-900);
+  }
+  .card--back .card__sigil {
+    fill: none;
+    stroke: var(--color-brass-dim);
+    stroke-width: 0.6;
+    opacity: 1;
+  }
+  .card--back:disabled {
+    opacity: 0.55;
+  }
+  /* The next card to turn is lit. */
+  .card--back:not(:disabled) {
+    --gem: var(--color-brass);
+    box-shadow:
+      0 18px 22px -12px rgb(0 0 0 / 0.9),
+      0 14px 34px -12px rgb(90 215 230 / 0.55);
+  }
+  .card--back:not(:disabled) .card__sigil {
+    stroke: var(--color-hextech);
+  }
+
+  /* Turning a card over: it swings round and flares in the colour of its gem. */
+  .card--revealed {
+    animation: forge-reveal 0.75s var(--ease-forge) both;
+    box-shadow:
+      0 18px 22px -12px rgb(0 0 0 / 0.9),
+      0 14px 34px -14px color-mix(in oklab, var(--gem) 80%, transparent);
+  }
+  @keyframes forge-reveal {
+    from {
+      transform: rotateY(-90deg) scale(0.92);
+      filter: brightness(2.6) saturate(0.4);
+    }
+    55% {
+      filter: brightness(1.5) saturate(1.1);
+    }
+    to {
+      transform: none;
+      filter: none;
+    }
+  }
+
+  .forge__actions {
+    display: grid;
+    justify-items: center;
+    gap: 1rem;
+    padding: clamp(2rem, 5vw, 3.5rem) 0;
+  }
+  .forge__actions p {
+    color: var(--color-ember);
+  }
+  .forge__open {
+    padding: 0.9rem 2rem;
+    border-radius: 2px;
+    background: var(--color-ember);
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    letter-spacing: 0.04em;
+    color: var(--color-forge-950);
+    box-shadow: 0 12px 24px -12px rgb(240 138 60 / 0.7);
+    transition: background-color 0.2s, transform 0.3s var(--ease-forge);
+  }
+  .forge__open:hover:not(:disabled) {
+    background: color-mix(in oklab, var(--color-ember) 80%, white);
+    transform: translateY(-2px);
+  }
+  .forge__open:disabled {
+    background: var(--color-forge-700);
+    color: var(--color-mist);
+    box-shadow: none;
+  }
+  .forge__secondary {
+    padding: 0.6rem 1.2rem;
+    border: 1px solid var(--color-brass-dim);
+    border-radius: 2px;
+    font-size: 1.05rem;
+    color: var(--color-ivory);
+    transition: border-color 0.2s, background-color 0.2s;
+  }
+  .forge__secondary:hover {
+    border-color: var(--color-brass);
+    background: var(--color-forge-800);
+  }
+
+  /* --- Forge seal and essence shop --------------------------------------- */
+
+  .seal,
+  .shop {
+    display: grid;
+    gap: 1.5rem;
+    padding: clamp(2rem, 5vw, 3rem) 0;
+    border-top: 1px solid color-mix(in oklab, var(--color-brass) 35%, transparent);
+  }
+  .seal .forge__open {
+    justify-self: start;
+  }
+  .seal__head h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.6rem, 4vw, 2.2rem);
+    letter-spacing: 0.02em;
+  }
+  .seal__head p {
+    max-width: 60ch;
+    margin-top: 0.4rem;
+    font-size: 1.05rem;
+    line-height: 1.5;
+    color: var(--color-mist);
+  }
+  .seal__head strong {
+    color: var(--color-ivory);
+  }
+  /* The gauge: a rail that fills with hextech light, a gem at each reward day. */
+  .seal__track {
+    position: relative;
+    height: 6.5rem;
+    margin-inline: 1.5rem;
+    background:
+      linear-gradient(var(--color-hextech), var(--color-hextech)) 0 1.2rem / calc(var(--progress) * 100%) 4px no-repeat,
+      linear-gradient(var(--color-forge-700), var(--color-forge-700)) 0 1.2rem / 100% 4px no-repeat;
+  }
+  .seal__track li {
+    position: absolute;
+    left: calc(var(--at) * 100%);
+    display: grid;
+    justify-items: center;
+    gap: 0.15rem;
+    width: 8rem;
+    translate: -50% 0;
+    font-size: 0.95rem;
+    text-align: center;
+    color: var(--color-mist);
+  }
+  .seal__track li:last-child {
+    translate: -75% 0;
+  }
+  .seal__track svg {
+    width: 2.6rem;
+    margin-bottom: 0.35rem;
+    filter: drop-shadow(0 4px 4px rgb(0 0 0 / 0.65)) grayscale(0.7) brightness(0.7);
+    transition: filter 0.5s var(--ease-forge);
+  }
+  .seal__track small {
+    font-size: inherit;
+  }
+  .seal__track span {
+    font-weight: 600;
+    color: var(--color-ivory);
+  }
+  .seal__track li[data-reached="true"] svg {
+    filter: drop-shadow(0 6px 10px color-mix(in oklab, var(--gem) 70%, transparent));
+  }
+  .seal__next {
+    font-size: 1.05rem;
+    color: var(--color-mist);
+  }
+
+  .shop__list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+    gap: 0.75rem;
+  }
+  .shop__item {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 0.1rem 0.8rem;
+    width: 100%;
+    padding: 0.85rem 1rem;
+    border: 1px solid color-mix(in oklab, var(--gem) 45%, var(--color-forge-700));
+    border-radius: 3px;
+    background: var(--color-forge-900);
+    text-align: left;
+    transition: border-color 0.2s, background-color 0.2s, transform 0.3s var(--ease-forge);
+  }
+  .shop__item svg {
+    grid-row: span 2;
+    width: 2.4rem;
+  }
+  .shop__name {
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: color-mix(in oklab, var(--gem) 70%, white);
+  }
+  .shop__price {
+    font-variant-numeric: tabular-nums;
+    color: var(--color-mist);
+  }
+  .shop__item:hover:not(:disabled) {
+    border-color: var(--gem);
+    background: var(--color-forge-800);
+    transform: translateY(-2px);
+  }
+  .shop__item:disabled {
+    opacity: 0.45;
+  }
+
+  /* --- Friends ------------------------------------------------------------ */
+
+  .players {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+    gap: 0.75rem;
+  }
+  .players li {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--color-forge-700);
+    border-radius: 3px;
+    background: var(--color-forge-900);
+  }
+  .players__name {
+    display: grid;
+    flex: 1;
+    min-width: 0;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+  .players__name span {
+    font-weight: 400;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-mist);
+  }
+  .players__remove {
+    padding: 0.6rem 0.4rem;
+    color: var(--color-mist);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+  .players__remove:hover {
+    color: var(--color-ember);
+  }
+  .friend-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+    padding-bottom: 1.5rem;
+  }
+  .friend-bar h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.6rem, 4vw, 2.2rem);
+    letter-spacing: 0.02em;
   }
 
   /* --- Anvil: the opened card ------------------------------------------- */
@@ -752,6 +1169,36 @@
     border-color: var(--color-brass);
     background: var(--color-forge-800);
   }
+  /* Where the card stands in the player's collection, and the button to buy it. */
+  .anvil__own {
+    display: grid;
+    justify-items: start;
+    gap: 0.6rem;
+    max-width: 60ch;
+    margin-top: 1.5rem;
+    padding-top: 1.1rem;
+    border-top: 1px solid color-mix(in oklab, var(--color-brass) 35%, transparent);
+    color: var(--color-mist);
+  }
+  .anvil__own [role="alert"] {
+    color: var(--color-ember);
+  }
+  .anvil__buy {
+    padding: 0.65rem 1.1rem;
+    border-radius: 2px;
+    background: var(--color-ember);
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--color-forge-950);
+    transition: background-color 0.2s;
+  }
+  .anvil__buy:hover:not(:disabled) {
+    background: color-mix(in oklab, var(--color-ember) 80%, white);
+  }
+  .anvil__buy:disabled {
+    background: var(--color-forge-700);
+    color: var(--color-mist);
+  }
   .anvil__close {
     position: absolute;
     z-index: 3;
@@ -773,6 +1220,46 @@
   /* --- Narrow screens ---------------------------------------------------- */
 
   @media (max-width: 720px) {
+    /* Name of the game and account on one line, the pages on their own line underneath. */
+    .masthead__bar {
+      column-gap: 0.75rem;
+    }
+    .masthead__mark {
+      margin-right: auto;
+      font-size: 0.95rem;
+      letter-spacing: 0.1em;
+    }
+    .user {
+      gap: 0.5rem;
+    }
+    .user__signout {
+      padding: 0.4rem 0.6rem;
+      font-size: 0.9rem;
+    }
+    .sitenav {
+      order: 1;
+      flex: 1 1 100%;
+      margin-inline: -0.75rem;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .user__name {
+      display: none;
+    }
+    .user__avatar {
+      width: 2rem;
+      height: 2rem;
+    }
+    /* Days 21 and 28 sit too close for two lines of text each: the gem alone says the rarity. */
+    .seal__track {
+      height: 4.75rem;
+    }
+    .seal__track li {
+      width: 4rem;
+    }
+    .seal__track small {
+      display: none;
+    }
     .masthead {
       grid-template-columns: 1fr;
       row-gap: 0.75rem;
@@ -815,6 +1302,12 @@
     .card--large {
       width: min(72%, 17rem);
     }
+    .pack__cards {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .stock__essence {
+      margin-left: 0;
+    }
     /* No room to lay text over the art on a phone: it goes underneath. */
     .anvil--wide[open] {
       overflow-y: auto;
@@ -851,6 +1344,9 @@
     .anvil--wide .anvil__info,
     .rack__slot svg {
       transition: none;
+    }
+    .card--revealed {
+      animation: none;
     }
     .card__art::before {
       animation: none !important;
