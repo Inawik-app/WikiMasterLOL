@@ -1,26 +1,862 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Forge Hextech: a dark petrol workshop, brass structure, hextech light, ember for what is selected. */
+@theme {
+  --color-forge-950: #050f12;
+  --color-forge-900: #0a1b20;
+  --color-forge-800: #10282f;
+  --color-forge-700: #1c3c45;
+  --color-brass: #c9a55c;
+  --color-brass-dim: #86713f;
+  --color-ivory: #ece5d3;
+  --color-mist: #9db4b5;
+  --color-hextech: #5ad7e6;
+  --color-ember: #f08a3c;
+
+  --font-display: var(--font-marcellus), "Times New Roman", serif;
+  --font-sans: var(--font-barlow), system-ui, sans-serif;
+
+  --ease-forge: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* One gem colour per rarity. --gem-fill differs only for the prismatic top tier. */
+[data-rarity] {
+  --gem-fill: var(--gem);
 }
+[data-rarity="common"] { --gem: #8d979c; }
+[data-rarity="uncommon"] { --gem: #58b97e; }
+[data-rarity="rare"] { --gem: #4b8df5; }
+[data-rarity="epic"] { --gem: #a274f5; }
+[data-rarity="legendary"] { --gem: #f2613c; }
+[data-rarity="mythic"] { --gem: #f04fa9; }
+[data-rarity="ultimate"] { --gem: #f5c44e; }
+[data-rarity="transcendent"] { --gem: #c8f6ff; --gem-fill: url(#gem-prism); }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html {
+    background: var(--color-forge-950);
+    color: var(--color-ivory);
+    font-family: var(--font-sans);
+    scrollbar-color: var(--color-brass-dim) var(--color-forge-950);
+    caret-color: var(--color-hextech);
+  }
+  body {
+    min-height: 100dvh;
+    /* Engraved honeycomb, barely there. */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='49' viewBox='0 0 28 49'%3E%3Cpath fill='%235ad7e6' fill-opacity='.045' d='M13.99 9.25l13 7.5v15l-13 7.5L1 31.75v-15l12.99-7.5zM3 17.9v12.7l10.99 6.34 11-6.35V17.9l-11-6.34L3 17.9zM0 15l12.98-7.5V0h-2v6.35L0 12.69v2.3zm0 18.5L12.98 41v8h-2v-6.85L0 35.81v-2.3zM15 0v7.5L27.99 15H28v-2.31h-.01L17 6.35V0h-2zm0 49v-8l12.99-7.5H28v2.31h-.01L17 42.15V49h-2z'/%3E%3C/svg%3E");
+  }
+  ::selection {
+    background: var(--color-ember);
+    color: var(--color-forge-950);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-hextech);
+    outline-offset: 3px;
+  }
+  button {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: default;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .gem__table {
+    fill: var(--gem-fill);
+  }
+  .gem__outline {
+    fill: none;
+    stroke: color-mix(in oklab, var(--gem) 40%, #05080a);
+    stroke-width: 0.9;
+    stroke-linejoin: round;
+  }
+
+  /* --- Page ------------------------------------------------------------- */
+
+  .forge {
+    --gutter: clamp(1rem, 4vw, 3.5rem);
+    padding: 0 var(--gutter) 6rem;
+    /* Hextech glow hanging over the bench. */
+    background: radial-gradient(90% 26rem at 50% -6rem, rgb(90 215 230 / 0.2), transparent 70%);
+  }
+
+  .masthead {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: end;
+    column-gap: 2rem;
+    padding: 1.25rem 0 clamp(1.5rem, 4vw, 2.75rem);
+  }
+  .masthead__mark {
+    grid-column: 1 / -1;
+    margin-bottom: clamp(1.75rem, 5vw, 3.5rem);
+    padding-bottom: 1rem;
+    border-bottom: 1px solid color-mix(in oklab, var(--color-brass) 35%, transparent);
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-brass);
+  }
+  .masthead h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2.6rem, 8vw, 5.75rem);
+    line-height: 0.95;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    text-wrap: balance;
+  }
+  .masthead__lede {
+    max-width: 22rem;
+    padding-bottom: 0.4rem;
+    font-size: 1.1rem;
+    line-height: 1.4;
+    color: var(--color-mist);
+    text-wrap: pretty;
+  }
+
+  /* --- Rarity rack: eight gems resting on a brass rail ------------------- */
+
+  .rack {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+  }
+  .rack__slot::before {
+    content: "";
+    position: absolute;
+    inset: calc(0.6rem + var(--gem-size) / 2 - 1px) 0 auto;
+    height: 3px;
+    background: linear-gradient(to bottom, var(--color-brass), var(--color-brass-dim));
+    box-shadow: 0 3px 6px rgb(0 0 0 / 0.6);
+  }
+  .rack__slot {
+    --gem-size: 2.6rem;
+    position: relative;
+    display: grid;
+    align-content: start;
+    justify-items: center;
+    gap: 0.15rem;
+    padding: 0.6rem 0.25rem 0.75rem;
+    border-radius: 3px;
+    color: var(--color-mist);
+    transition: color 0.3s, background-color 0.3s;
+  }
+  .rack__slot svg {
+    position: relative;
+    width: var(--gem-size);
+    margin-bottom: 0.5rem;
+    filter: drop-shadow(0 4px 4px rgb(0 0 0 / 0.65));
+    transition: transform 0.5s var(--ease-forge), filter 0.5s var(--ease-forge);
+  }
+  .rack__slot:hover:not(:disabled) {
+    color: var(--color-ivory);
+  }
+  .rack__slot:hover:not(:disabled) svg {
+    transform: translateY(-3px);
+  }
+  .rack__slot[aria-pressed="true"] {
+    color: var(--color-ivory);
+    background: linear-gradient(to bottom, color-mix(in oklab, var(--gem) 22%, transparent), transparent 85%);
+  }
+  .rack__slot[aria-pressed="true"] svg {
+    transform: translateY(-5px) scale(1.18);
+    filter: drop-shadow(0 8px 10px color-mix(in oklab, var(--gem) 75%, transparent));
+  }
+  .rack__slot:disabled {
+    opacity: 0.35;
+  }
+  .rack__label {
+    font-size: clamp(0.78rem, 1.45vw, 0.95rem);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .rack__count {
+    font-size: 0.95rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* --- Bench: type tabs and search -------------------------------------- */
+
+  .bench {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem 2rem;
+    margin-top: 1.25rem;
+    padding: 0.85rem 0;
+    border-block: 1px solid color-mix(in oklab, var(--color-brass) 35%, transparent);
+  }
+  .tabs {
+    display: flex;
+    flex: 1 1 32rem;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.35rem;
+  }
+  .tabs__tab {
+    padding: 0.4rem 0.75rem;
+    border-radius: 2px;
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--color-mist);
+    transition: color 0.2s, background-color 0.2s;
+  }
+  .tabs__tab:hover {
+    color: var(--color-ivory);
+    background: var(--color-forge-800);
+  }
+  .tabs__tab[aria-pressed="true"] {
+    color: var(--color-forge-950);
+    background: var(--color-ember);
+  }
+
+  .search {
+    display: flex;
+    flex: 1 1 14rem;
+    align-items: center;
+    gap: 0.6rem;
+    max-width: 22rem;
+    padding: 0.5rem 0.8rem;
+    border: 1px solid var(--color-forge-700);
+    border-radius: 2px;
+    background: var(--color-forge-900);
+    transition: border-color 0.2s;
+  }
+  .search:focus-within {
+    border-color: var(--color-hextech);
+  }
+  .search svg,
+  .anvil__link svg,
+  .anvil__toggle svg,
+  .anvil__close svg {
+    width: 1.15rem;
+    flex: none;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .search svg {
+    color: var(--color-brass);
+  }
+  .search input {
+    width: 100%;
+    background: none;
+    font-size: 1rem;
+    outline: none;
+  }
+  .search input::placeholder {
+    color: var(--color-mist);
+  }
+
+  .tally {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.1rem 0 1.4rem;
+    color: var(--color-mist);
+  }
+  .tally strong {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 400;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-ivory);
+  }
+  .switch {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 1rem;
+    color: var(--color-mist);
+  }
+  .switch__track {
+    position: relative;
+    width: 2.4rem;
+    height: 1.3rem;
+    border: 1px solid var(--color-brass-dim);
+    border-radius: 2px;
+    background: var(--color-forge-900);
+  }
+  .switch__track::after {
+    content: "";
+    position: absolute;
+    inset: 2px auto 2px 2px;
+    width: 1rem;
+    border-radius: 1px;
+    background: var(--color-brass-dim);
+    transition: translate 0.35s var(--ease-forge), background-color 0.35s;
+  }
+  .switch[aria-pressed="true"] {
+    color: var(--color-ivory);
+  }
+  .switch[aria-pressed="true"] .switch__track::after {
+    translate: 1.05rem 0;
+    background: var(--color-hextech);
+  }
+
+  .empty {
+    max-width: 34rem;
+    padding: 3rem 0;
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    line-height: 1.3;
+    color: var(--color-mist);
+    text-wrap: balance;
+  }
+  .sentinel {
+    height: 1px;
+  }
+
+  /* --- Card -------------------------------------------------------------- */
+
+  .grid-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(clamp(6.4rem, 27vw, 10.5rem), 1fr));
+    gap: clamp(1rem, 2.2vw, 1.75rem) clamp(0.6rem, 1.6vw, 1.25rem);
+  }
+
+  .card {
+    --bezel: 3px;
+    position: relative;
+    display: block;
+    width: 100%;
+    aspect-ratio: 5 / 7;
+    border-radius: 4px;
+    /* Forged bezel: dark metal that takes the tint of the gem it holds. */
+    background: linear-gradient(
+      155deg,
+      color-mix(in oklab, var(--gem) 62%, #3a3220),
+      #15130e 42%,
+      #15130e 58%,
+      color-mix(in oklab, var(--gem) 40%, #1d190f)
+    );
+    box-shadow: 0 8px 14px -8px rgb(0 0 0 / 0.85);
+    text-align: center;
+    transition: transform 0.45s var(--ease-forge), box-shadow 0.45s var(--ease-forge);
+  }
+  .card:is([data-rarity="legendary"], [data-rarity="mythic"]) {
+    --bezel: 4px;
+  }
+  .card:is([data-rarity="ultimate"], [data-rarity="transcendent"]) {
+    --bezel: 5px;
+  }
+  button.card:hover:not(:disabled),
+  button.card:focus-visible {
+    transform: translateY(-5px);
+    box-shadow:
+      0 18px 22px -12px rgb(0 0 0 / 0.9),
+      0 14px 28px -14px color-mix(in oklab, var(--gem) 70%, transparent);
+  }
+  .card__art {
+    position: absolute;
+    inset: var(--bezel);
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    border-radius: 2px;
+    background: var(--color-forge-800);
+  }
+  .card__full {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+  }
+  /* Small icons keep their true size, set in a socket over a blurred wash of their own colours. */
+  .card__blur {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    scale: 2.4;
+    filter: blur(16px) saturate(1.15) brightness(0.38);
+  }
+  .card__icon {
+    position: relative;
+    width: min(56%, 5.5rem);
+    aspect-ratio: 1;
+    margin-bottom: 18%;
+    background: var(--color-forge-900);
+    border: 2px solid var(--color-brass);
+    border-radius: 3px;
+    box-shadow: 0 8px 14px -4px rgb(0 0 0 / 0.8);
+  }
+  /* Landscape-only art (stories, videos, regions): a wide window instead of a narrow crop. */
+  .card__window {
+    position: relative;
+    align-self: start;
+    width: 100%;
+    height: 66%;
+    object-fit: cover;
+    box-shadow: 0 2px 0 color-mix(in oklab, var(--gem) 45%, #15130e), 0 10px 14px -6px rgb(0 0 0 / 0.8);
+  }
+  .card--landscape .card__window {
+    height: 72%;
+  }
+  .card--landscape .card__plate {
+    padding-top: 0.6em;
+    background: none;
+  }
+  /* Skins with a special border: the whole loading-screen art, so the overlay lines up. */
+  .card__portrait {
+    position: relative;
+    height: 100%;
+    aspect-ratio: 308 / 560;
+  }
+  .card__portrait > img:first-child {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .card__frame {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    height: 91.4%;
+    max-width: none;
+    translate: -50% 0;
+    pointer-events: none;
+  }
+  .card__plate {
+    position: absolute;
+    inset: auto var(--bezel) var(--bezel);
+    padding: 2.2em 0.45em 0.55em;
+    border-radius: 0 0 2px 2px;
+    background: linear-gradient(to top, rgb(5 15 18 / 0.96) 40%, rgb(5 15 18 / 0.7) 70%, transparent);
+    font-family: var(--font-display);
+    font-size: clamp(0.72rem, 2.6vw, 0.9rem);
+    line-height: 1.15;
+    letter-spacing: 0.01em;
+    text-wrap: balance;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+  }
+  .card__gem {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: clamp(1.25rem, 5vw, 1.6rem);
+    translate: -50% -42%;
+    filter: drop-shadow(0 2px 2px rgb(0 0 0 / 0.75));
+  }
+
+  /* From legendary up, the gem lights the art from inside the frame. */
+  .card:is([data-rarity="legendary"], [data-rarity="mythic"], [data-rarity="ultimate"], [data-rarity="transcendent"])
+    .card__art::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow:
+      inset 0 0 0 1px color-mix(in oklab, var(--gem) 80%, transparent),
+      inset 0 12px 22px -10px color-mix(in oklab, var(--gem) 65%, transparent);
+    pointer-events: none;
+  }
+  /* The two top tiers shimmer on their own. */
+  .card:is([data-rarity="ultimate"], [data-rarity="transcendent"]) .card__art::before {
+    content: "";
+    position: absolute;
+    inset: -40%;
+    z-index: 1;
+    background: linear-gradient(115deg, transparent 42%, color-mix(in oklab, var(--gem) 45%, white) 50%, transparent 58%);
+    mix-blend-mode: soft-light;
+    animation: sheen 6s var(--ease-forge) infinite;
+    pointer-events: none;
+  }
+  @keyframes sheen {
+    from { translate: -45% 0; }
+    60%, to { translate: 45% 0; }
+  }
+
+  /* Mystery silhouette: the frame and the gem, nothing else. */
+  .card--locked .card__art {
+    background:
+      radial-gradient(70% 55% at 50% 42%, color-mix(in oklab, var(--gem) 22%, transparent), transparent),
+      var(--color-forge-900);
+  }
+  .card--locked .card__art::before,
+  .card--locked .card__art::after {
+    display: none;
+  }
+  .card__sigil {
+    width: 46%;
+    opacity: 0.3;
+  }
+
+  /* --- Anvil: the opened card ------------------------------------------- */
+
+  .anvil {
+    position: fixed;
+    inset: 0;
+    width: min(100vw - 2rem, 62rem);
+    max-height: calc(100dvh - 2rem);
+    margin: auto;
+    overflow: auto;
+    border: 1px solid color-mix(in oklab, var(--color-brass) 55%, transparent);
+    border-radius: 4px;
+    background: var(--color-forge-900);
+    color: var(--color-ivory);
+    box-shadow: 0 40px 80px -30px rgb(0 0 0 / 0.9);
+    opacity: 0;
+    scale: 0.94;
+    transition:
+      opacity 0.35s var(--ease-forge),
+      scale 0.5s var(--ease-forge),
+      overlay 0.5s allow-discrete,
+      display 0.5s allow-discrete;
+  }
+  .anvil[open] {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    opacity: 1;
+    scale: 1;
+  }
+  @starting-style {
+    .anvil[open] {
+      opacity: 0;
+      scale: 0.94;
+    }
+  }
+  .anvil::backdrop {
+    background: rgb(2 8 10 / 0.84);
+    backdrop-filter: blur(6px);
+  }
+  .anvil__backdrop {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.22;
+    mask-image: linear-gradient(to right, transparent 20%, black);
+  }
+  .anvil__stage {
+    position: relative;
+    display: grid;
+    place-items: center;
+    padding: clamp(1.75rem, 5vw, 3.5rem) clamp(1.25rem, 4vw, 3rem);
+    perspective: 900px;
+    background: radial-gradient(60% 50% at 50% 55%, color-mix(in oklab, var(--gem) 26%, transparent), transparent);
+  }
+  .card--large {
+    --bezel: 5px;
+    width: min(100%, 21rem);
+    transform: rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+    transition: transform 0.6s var(--ease-forge);
+    box-shadow:
+      0 30px 40px -22px rgb(0 0 0 / 0.95),
+      0 24px 60px -24px color-mix(in oklab, var(--gem) 70%, transparent);
+  }
+  .card--large .card__full {
+    object-position: center;
+  }
+  .card--large .card__plate {
+    font-size: 1.2rem;
+  }
+  .card--large .card__gem {
+    width: 2.6rem;
+  }
+  .card--large .card__icon {
+    width: 8rem; /* exactly twice the 64px source */
+  }
+  .card__light {
+    position: absolute;
+    inset: var(--bezel);
+    z-index: 2;
+    border-radius: 2px;
+    background: radial-gradient(
+      circle at var(--light-x, 50%) var(--light-y, -20%),
+      color-mix(in oklab, var(--gem) 40%, white),
+      transparent 55%
+    );
+    mix-blend-mode: soft-light;
+    pointer-events: none;
+  }
+  .anvil__info {
+    position: relative;
+    align-self: center;
+    padding: clamp(1.5rem, 4vw, 3rem);
+    padding-left: 0;
+  }
+  .anvil__info h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.9rem, 4.5vw, 3rem);
+    line-height: 1.05;
+    text-wrap: balance;
+  }
+  .anvil__subtitle {
+    margin-top: 0.5rem;
+    font-size: 1.2rem;
+    color: var(--color-brass);
+  }
+  .anvil__rank {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 1.5rem;
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: color-mix(in oklab, var(--gem) 70%, white);
+  }
+  .anvil__rank svg {
+    width: 1.7rem;
+  }
+  .anvil__rank span {
+    padding-left: 0.6rem;
+    border-left: 1px solid var(--color-forge-700);
+    font-weight: 500;
+    color: var(--color-mist);
+  }
+  .anvil__flavor {
+    max-width: 60ch;
+    margin-top: 1.5rem;
+    font-size: 1.1rem;
+    line-height: 1.55;
+    color: color-mix(in oklab, var(--color-ivory) 82%, var(--color-forge-900));
+    text-wrap: pretty;
+  }
+  .anvil__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1.75rem;
+    padding: 0.65rem 1.1rem;
+    border-radius: 2px;
+    background: var(--color-ember);
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--color-forge-950);
+    transition: background-color 0.2s;
+  }
+  .anvil__link:hover {
+    background: color-mix(in oklab, var(--color-ember) 80%, white);
+  }
+  .anvil__facts {
+    display: grid;
+    gap: 0.5rem;
+    max-width: 60ch;
+    margin-top: 1.5rem;
+    padding-top: 1.1rem;
+    border-top: 1px solid color-mix(in oklab, var(--color-brass) 35%, transparent);
+    font-size: 1.05rem;
+  }
+  .anvil__facts div {
+    display: grid;
+    grid-template-columns: 11rem 1fr;
+    gap: 1rem;
+  }
+  .anvil__facts dt {
+    color: var(--color-mist);
+  }
+
+  /* Wide art: the whole artwork fills the dialog, the text lies over its right edge. */
+  .anvil--wide[open] {
+    display: block;
+    width: min(100vw - 2rem, 86rem);
+    overflow: hidden;
+    border-color: color-mix(in oklab, var(--gem) 55%, var(--color-brass-dim));
+  }
+  .anvil__art {
+    position: relative;
+    display: grid;
+    background: #020607;
+  }
+  .anvil__art img {
+    width: 100%;
+    max-height: calc(100dvh - 2rem);
+    object-fit: contain;
+  }
+  .anvil__art .card__light {
+    inset: 0;
+    opacity: 0.6;
+  }
+  /* With the text put away, the gem is the only thing left to say the rarity. */
+  .anvil__gem {
+    position: absolute;
+    top: 0.7rem;
+    left: 1rem;
+    width: 2.6rem;
+    filter: drop-shadow(0 4px 5px rgb(0 0 0 / 0.8));
+    opacity: 0;
+    transition: opacity 0.4s var(--ease-forge);
+  }
+  .anvil--art-only .anvil__gem {
+    opacity: 1;
+  }
+  .anvil--wide .anvil__close {
+    border: 1px solid var(--color-brass-dim);
+    background: rgb(5 15 18 / 0.88);
+    color: var(--color-ivory);
+  }
+  .anvil--wide .anvil__info {
+    position: absolute;
+    inset: 0 0 0 auto;
+    align-self: auto;
+    width: min(31rem, 48%);
+    padding: 3.75rem 2rem 5rem clamp(3.5rem, 6vw, 6rem);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    background: linear-gradient(to right, transparent, rgb(5 15 18 / 0.86) 3rem, rgb(5 15 18 / 0.95));
+    /* Long text fades out at the bottom instead of being cut mid-line. */
+    mask-image: linear-gradient(to bottom, black calc(100% - 4rem), transparent);
+    transition:
+      translate 0.55s var(--ease-forge),
+      opacity 0.4s var(--ease-forge),
+      visibility 0.55s;
+  }
+  .anvil--wide .anvil__info h2 {
+    font-size: clamp(1.7rem, 2.6vw, 2.4rem);
+  }
+  .anvil--wide .anvil__facts div {
+    grid-template-columns: 1fr;
+    gap: 0.1rem;
+  }
+  .anvil--art-only .anvil__info {
+    translate: 30% 0;
+    opacity: 0;
+    visibility: hidden;
+  }
+  .anvil__mini {
+    width: clamp(9.5rem, 16vw, 15rem);
+    margin-bottom: 1.5rem;
+  }
+  /* Bottom left, over the art: the text panel on the right must stay readable. */
+  .anvil__toggle {
+    position: absolute;
+    left: 1rem;
+    bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 0.9rem;
+    border: 1px solid var(--color-brass-dim);
+    border-radius: 2px;
+    background: rgb(5 15 18 / 0.88);
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--color-ivory);
+    transition: border-color 0.2s, background-color 0.2s;
+  }
+  .anvil__toggle:hover {
+    border-color: var(--color-brass);
+    background: var(--color-forge-800);
+  }
+  .anvil__close {
+    position: absolute;
+    z-index: 3;
+    top: 0.75rem;
+    right: 0.75rem;
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 2px;
+    color: var(--color-mist);
+    transition: color 0.2s, background-color 0.2s;
+  }
+  .anvil__close:hover {
+    color: var(--color-ivory);
+    background: var(--color-forge-800);
+  }
+
+  /* --- Narrow screens ---------------------------------------------------- */
+
+  @media (max-width: 720px) {
+    .masthead {
+      grid-template-columns: 1fr;
+      row-gap: 0.75rem;
+    }
+    .rack {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      row-gap: 0.5rem;
+    }
+    .rack__slot {
+      --gem-size: 2.1rem;
+    }
+    .rack__slot svg {
+      margin-bottom: 0.25rem;
+    }
+    .rack__label {
+      font-size: 0.78rem;
+    }
+    /* Types scroll sideways rather than stacking five rows above the cards. */
+    .tabs {
+      flex: 1 1 100%;
+      flex-wrap: nowrap;
+      margin-inline: calc(var(--gutter) * -1);
+      padding-inline: var(--gutter);
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .tabs__tab {
+      flex: none;
+    }
+    .search {
+      max-width: none;
+    }
+    .anvil[open] {
+      grid-template-columns: 1fr;
+    }
+    .anvil__backdrop {
+      height: 55%;
+      mask-image: linear-gradient(to bottom, black, transparent);
+    }
+    .card--large {
+      width: min(72%, 17rem);
+    }
+    /* No room to lay text over the art on a phone: it goes underneath. */
+    .anvil--wide[open] {
+      overflow-y: auto;
+    }
+    .anvil--wide .anvil__info {
+      position: static;
+      width: auto;
+      padding: 1.5rem 1.25rem 2rem;
+      background: none;
+      mask-image: none;
+    }
+    .anvil__gem {
+      opacity: 1;
+    }
+    .anvil__mini {
+      width: 11rem;
+    }
+    .anvil__toggle {
+      display: none;
+    }
+    .anvil__facts div {
+      grid-template-columns: 1fr;
+      gap: 0.1rem;
+    }
+    .anvil__info {
+      padding: 0 1.25rem 2rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card,
+    .card--large,
+    .anvil,
+    .anvil--wide .anvil__info,
+    .rack__slot svg {
+      transition: none;
+    }
+    .card__art::before {
+      animation: none !important;
+    }
+    .card--large {
+      transform: none;
+    }
+  }
 }

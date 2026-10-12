@@ -2,7 +2,7 @@
 
 ## Outils
 
-Lanceur intégré à Node (`node --test`), qui exécute le TypeScript directement depuis Node 24 : aucune dépendance. Script `npm test` à ajouter avec le premier test.
+Lanceur intégré à Node (`node --test`), qui exécute le TypeScript directement depuis Node 24 : aucune dépendance. Commande : `npm test`. Les tests vivent à côté du fichier testé (`*.test.ts`).
 
 ## Quoi tester
 

@@ -11,6 +11,8 @@ Postgres chez Supabase, palier gratuit (500 Mo, mise en pause après 7 jours san
 - `profiles` — un par joueur (`id` = `auth.users.id`, pseudo, état de la limite de boosters).
 - `collection` — une ligne par (joueur, carte) avec un compteur d'exemplaires. `card_id` est l'identifiant de la carte dans `src/data/cards.json` : pas de table `cards`, donc pas de clé étrangère dessus.
 
+À DÉCIDER : comment stocker les chromas obtenus (dépend de la mécanique de déblocage, voir `PRD.md`). Piste : une ligne par (joueur, carte, chroma).
+
 À DÉCIDER : forme exacte de la limite de boosters dans `profiles` (dépend du rythme choisi dans `PRD.md`).
 
 ## Règles

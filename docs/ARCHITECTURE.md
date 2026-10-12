@@ -11,9 +11,13 @@ Navigateur ──► Next.js sur Vercel (pages serveur + Server Actions) ──�
 
 Sources du catalogue, toutes en JSON (aucun scraping) :
 
-- champions : `ddragon.leagueoflegends.com/cdn/<version>/data/fr_FR/champion.json`
-- skins et paliers de rareté : `raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/fr_fr/v1/skins.json`
-- univers : `universe-meeps.leagueoflegends.com/v1/fr_fr/` (`faction-browse`, `champion-browse`, `search`)
+- titres et compétences des champions, sorts d'invocateur, runes, objets : Data Dragon (`ddragon.leagueoflegends.com`, officiel Riot)
+- champions, skins, paliers Riot, chromas, images : CommunityDragon (`raw.communitydragon.org`, `skins.json`)
+- disponibilité et date de sortie des skins, taux de sélection des champions : Meraki Analytics (`cdn.merakianalytics.com`, communautaire, tiré du wiki LoL)
+- régions, récits, vidéos, bandes dessinées : `universe-meeps.leagueoflegends.com/v1/fr_fr/`. Pas d'index complet : le script parcourt `explore2` et la page de chaque champion et région (~450 requêtes)
+- personnages secondaires, lieux, sorts, objets : Data Dragon de Legends of Runeterra (`dd.b.pvp.net`, officiel Riot)
+
+Meraki est la source la plus fragile (bénévole, parfois en retard de plusieurs patchs). Un skin qu'elle ne connaît pas garde son seul palier Riot.
 
 ## 2. Qui est responsable de quoi ?
 
@@ -27,7 +31,8 @@ Sources du catalogue, toutes en JSON (aucun scraping) :
 ## 3. Pourquoi est-ce construit ainsi ?
 
 - 2026-10-12 — Catalogue en fichier JSON généré, pas en base : ~2 400 cartes en lecture seule qui ne changent qu'à chaque patch. Écarté : table `cards` (une migration de données à chaque patch pour rien).
-- 2026-10-12 — Rareté = palier officiel Riot (champ `rarity` de CommunityDragon). Écarté : popularité en jeu (source externe, change à chaque patch).
+- 2026-10-12 — Rareté calculée à la génération et figée dans le catalogue (règles dans `docs/PRD.md`). Elle ne bouge donc qu'en relançant `npm run cards`, pas à chaque variation de taux de sélection.
+- 2026-10-12 — Les types `Card` et `Rarity` vivent dans `src/lib/card.ts`, partagés par le script et le site.
 - 2026-10-12 — Tirage dans une Server Action avec la clé de service, écriture interdite aux clients par RLS : empêche de s'offrir des cartes depuis le navigateur. Écarté : fonction PL/pgSQL (plus dure à lire et à tester).
 - 2026-10-12 — Images servies depuis les CDN Riot : pas de stockage, pas de quota. Risque accepté : une URL peut changer à un patch, `npm run cards` la régénère.
 
