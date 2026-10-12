@@ -15,7 +15,13 @@ Sources du catalogue, toutes en JSON (aucun scraping) :
 - champions, skins, paliers Riot, chromas, images : CommunityDragon (`raw.communitydragon.org`, `skins.json`)
 - disponibilité et date de sortie des skins, taux de sélection des champions : Meraki Analytics (`cdn.merakianalytics.com`, communautaire, tiré du wiki LoL)
 - régions, récits, vidéos, bandes dessinées : `universe-meeps.leagueoflegends.com/v1/fr_fr/`. Pas d'index complet : le script parcourt `explore2` et la page de chaque champion et région (~450 requêtes)
+- équipes, joueurs et compétitions e-sport : API de lolesports.com (`esports-api.lolesports.com`), avec la clé publique que le site envoie à chaque visiteur
+- Teamfight Tactics, icônes des monstres et des voies, illustrations des modes de jeu : CommunityDragon
+- hymnes des Worlds : miniature et nombre de vues lus sur la page YouTube de chaque clip
+- serveurs, voies, monstres, cartes, modes de jeu, personnalités : listes écrites à la main dans `scripts/handmade.ts`
 - personnages secondaires, lieux, sorts, objets : Data Dragon de Legends of Runeterra (`dd.b.pvp.net`, officiel Riot)
+
+Les cartes sans illustration officielle (serveurs, personnalités, modes et monstres disparus) reçoivent un emblème dessiné par le script dans `public/emblems/`. Les personnalités (développeurs, commentateurs) n'ont jamais de photo ; les joueurs e-sport ont la photo officielle fournie par lolesports, et ceux qui n'en ont pas n'ont pas de carte. Pour les familles ajoutées en dernier, le script vérifie que chaque image répond et écarte les cartes dont l'image a disparu.
 
 Meraki est la source la plus fragile (bénévole, parfois en retard de plusieurs patchs). Un skin qu'elle ne connaît pas garde son seul palier Riot.
 

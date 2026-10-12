@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 840">
+<defs><radialGradient id="g" cx="50%" cy="42%" r="60%"><stop offset="0" stop-color="#1c3c45"/><stop offset="1" stop-color="#050f12"/></radialGradient></defs>
+<rect width="600" height="840" fill="url(#g)"/>
+<rect x="24" y="24" width="552" height="792" fill="none" stroke="#86713f" stroke-width="3"/>
+<rect x="38" y="38" width="524" height="764" fill="none" stroke="#86713f" stroke-width="1"/>
+<polygon points="300,130 500,245 500,475 300,590 100,475 100,245" fill="#0a1b20" stroke="#c9a55c" stroke-width="5"/>
+<polygon points="300,160 474,260 474,460 300,560 126,460 126,260" fill="none" stroke="#86713f" stroke-width="2"/>
+<text x="300" y="360" text-anchor="middle" dominant-baseline="central" font-family="Georgia, 'Times New Roman', serif" font-size="250" letter-spacing="4" fill="#c9a55c">BJ</text>
+</svg>

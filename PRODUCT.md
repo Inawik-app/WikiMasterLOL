@@ -28,7 +28,7 @@ Chaque carte est un vrai morceau de League of Legends (champion, skin, compéten
 
 ## Capabilities and Constraints
 
-- Catalogue de 5 829 cartes dans `src/data/cards.json`, 13 types, 8 paliers de rareté (commun, peu commun, rare, épique, légendaire, mythique, ultime, transcendant).
+- Catalogue de 8 729 cartes dans `src/data/cards.json`, 25 types, 8 paliers de rareté (commun, peu commun, rare, épique, légendaire, mythique, ultime, transcendant).
 - Face d'une carte : image, nom, rareté. Sous-titre, texte d'ambiance et lien vers le récit n'apparaissent qu'à l'ouverture de la carte.
 - Images très hétérogènes, servies depuis les CDN de Riot, jamais copiées ni optimisées par un service payant : visuel vertical + splash paysage (champions, skins), grande illustration (Legends of Runeterra), image paysage (récits, vidéos, régions), simple icône de 64 px (compétences, sorts d'invocateur, runes, objets).
 - Les skins portent des chromas (nom + deux couleurs) qui donneront un effet coloré à la carte.

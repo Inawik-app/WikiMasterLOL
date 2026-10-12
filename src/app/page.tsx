@@ -10,7 +10,7 @@ export default function Home() {
   // compression. Fine for a catalogue everyone may see; the collection page must filter on
   // the server so that cards a player does not own never reach their browser.
   const cards = all
-    .map(({ id, type, name, rarity, image, splash, subtitle, flavor, url, facts, frames, focus }) => ({
+    .map(({ id, type, name, rarity, image, splash, subtitle, flavor, url, facts, frames, focus, icon }) => ({
       id,
       type,
       name,
@@ -23,6 +23,7 @@ export default function Home() {
       facts,
       frames,
       focus,
+      icon,
     }))
     .sort((a, b) => RARITIES.indexOf(b.rarity) - RARITIES.indexOf(a.rarity));
 

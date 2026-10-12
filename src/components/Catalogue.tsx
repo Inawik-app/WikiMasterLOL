@@ -13,6 +13,8 @@ const LINK_LABEL: Partial<Record<CardType, string>> = {
   video: "Regarder la vidéo",
   comic: "Lire la bande dessinée",
   region: "Explorer la région",
+  song: "Écouter sur YouTube",
+  person: "Voir sur Leaguepedia",
 };
 
 const NARRATIVE_TYPES = new Set<CardType>(["story", "video", "comic"]);
