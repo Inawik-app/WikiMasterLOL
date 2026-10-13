@@ -842,8 +842,12 @@
 
   .pack {
     position: relative;
-    z-index: 21; /* above the darkened room of a rare reveal */
+    isolation: isolate; /* keeps its glow behind its own cards, and itself under the top bar */
     padding-top: clamp(2rem, 5vw, 3.5rem);
+  }
+  /* While a rare card has its light show, the bench rises above the darkened room. */
+  .pack--lit {
+    z-index: 21;
   }
   /* Cards land on the bench one after the other. */
   .pack__slot--dealt {

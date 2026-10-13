@@ -200,7 +200,7 @@ export function BoosterForge() {
       </section>
 
       {pack && pack.cards.length > 0 && (
-        <section className="pack" aria-label="Cartes à retourner">
+        <section className={`pack${burst ? " pack--lit" : ""}`} aria-label="Cartes à retourner">
           {glow && <div className="pack__glow" data-rarity={glow} aria-hidden="true" />}
           <ol className="pack__cards" data-count={pack.cards.length}>
             {pack.cards.map((opened, i) =>
