@@ -11,6 +11,8 @@ export async function GET(request: Request) {
   }
   const admin = adminClient();
   if (!admin) return new Response("Not configured", { status: 503 });
-  await postRecap(await weeklyRecap(admin));
-  return new Response("ok");
+  const recap = await weeklyRecap(admin);
+  await postRecap(recap);
+  // Handy when the job is run by hand: what was sent.
+  return Response.json(recap);
 }
