@@ -73,14 +73,10 @@ export function UserMenu() {
   );
 }
 
-const count = new Intl.NumberFormat("fr-FR");
-
-// The crest of the player's rank over a thin bar: how far along to the next one.
+// The crest of the player's rank over a thin bar: how far along to the next division.
 function Rank({ cards }: { cards: number }) {
-  const { name, next, progress } = playerRank(cards);
-  const label = next
-    ? `Rang ${name} · ${count.format(cards)} cartes, ${name === "Challenger" ? "" : `${count.format(next - cards)} avant le rang suivant`}`
-    : `Rang ${name} · ${count.format(cards)} cartes`;
+  // The crest carries the same text as its own tooltip: one answer wherever the pointer is.
+  const { progress, summary: label } = playerRank(cards);
   return (
     <span className="user__rank" title={label}>
       <RankBadge cards={cards} />

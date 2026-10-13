@@ -8,8 +8,8 @@ export const metadata: Metadata = { title: "Catalogue" };
 export default function CataloguePage() {
   return (
     <main className="forge">
+      <SiteHeader current="catalogue" />
       <header className="masthead">
-        <SiteHeader current="catalogue" />
         <h1>Le catalogue</h1>
         <p className="masthead__lede">
           {new Intl.NumberFormat("fr-FR").format(allCards().length)} cartes à forger, du rivet de fer à la gemme

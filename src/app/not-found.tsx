@@ -4,8 +4,8 @@ import { SiteHeader } from "@/components/SiteHeader";
 export default function NotFound() {
   return (
     <main className="forge">
+      <SiteHeader />
       <header className="masthead">
-        <SiteHeader />
         <h1>Page introuvable</h1>
         <p className="masthead__lede">Cette page n&apos;est jamais sortie de la forge, ou elle a été fondue depuis.</p>
       </header>

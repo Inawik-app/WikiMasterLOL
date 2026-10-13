@@ -86,10 +86,19 @@
     grid-template-columns: 1fr auto;
     align-items: end;
     column-gap: 2rem;
-    padding: 1.25rem 0 clamp(1.5rem, 4vw, 2.75rem);
+    padding: 0 0 clamp(1.5rem, 4vw, 2.75rem);
   }
+  /* The bar stays at the top while the page scrolls: the pages are always one click away,
+     and clicking the current one goes back up. */
   .masthead__bar {
-    grid-column: 1 / -1;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    margin-inline: calc(var(--gutter) * -1);
+    padding-inline: var(--gutter);
+    padding-top: 0.75rem;
+    background: color-mix(in oklab, var(--color-forge-950) 86%, transparent);
+    backdrop-filter: blur(12px);
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -1355,6 +1364,12 @@
     stroke-width: 1;
   }
   .rank__metal {
+    fill: var(--frame);
+  }
+  .rank__pip {
+    fill: var(--color-forge-700);
+  }
+  .rank__pip--on {
     fill: var(--frame);
   }
   .rank__gem {
