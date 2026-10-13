@@ -6,6 +6,7 @@ import { claimSeal, forgeCard, openBooster, type OpenedCard } from "@/app/action
 import { boosterStock, MAX_STOCK } from "@/lib/booster";
 import { RARITY_LABEL, type Rarity } from "@/lib/card";
 import { nextSealMilestone, PRICE, SEAL_CYCLE, SEAL_STEPS, sealReward, SECRET_RARITIES } from "@/lib/forge";
+import { RANKS } from "@/lib/upgrades";
 import { createClient } from "@/lib/supabase/client";
 import { CardDialog } from "./CardDialog";
 import { CardFace, cardClass, cardLabel, type FaceCard } from "./CardFace";
@@ -133,7 +134,9 @@ export function BoosterForge() {
       : pack.from === "booster"
         ? gained
           ? `Booster terminé. Les doublons t'ont rapporté ${count.format(gained)} essence.`
-          : "Booster terminé. Cinq nouvelles cartes pour ta collection."
+          : pack.cards.every((c) => c.isNew)
+            ? "Booster terminé. Cinq nouvelles cartes pour ta collection."
+            : "Booster terminé. Tes doublons ont amélioré des cartes de ta collection."
         : "Une carte de plus dans ta collection.";
 
   // Forge seal: where the player stands in the current 28-day cycle.
@@ -178,7 +181,13 @@ export function BoosterForge() {
                   </button>
                   <p className="pack__note" data-rarity={opened.card.rarity}>
                     <span>{RARITY_LABEL[opened.card.rarity]}</span>
-                    {opened.isNew ? "Nouvelle carte" : `Doublon · +${opened.essence} essence`}
+                    {opened.isNew
+                      ? "Nouvelle carte"
+                      : opened.rank
+                        ? `Doublon · rang ${RANKS[opened.rank - 1]}`
+                        : opened.chroma
+                          ? "Doublon · un chroma à choisir"
+                          : `Doublon · +${opened.essence} essence`}
                   </p>
                 </li>
               ) : (

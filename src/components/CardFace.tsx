@@ -1,4 +1,5 @@
 /* eslint-disable @next/next/no-img-element -- card art is hotlinked from Riot CDNs; next/image would spend Vercel's image quota */
+import type { CSSProperties } from "react";
 import { type Card, RARITY_LABEL } from "@/lib/card";
 import { Gem } from "./Gem";
 
@@ -6,6 +7,18 @@ export type FaceCard = Pick<
   Card,
   "id" | "type" | "name" | "rarity" | "image" | "splash" | "subtitle" | "flavor" | "url" | "facts" | "frames" | "focus" | "icon"
 >;
+
+// What an owned card wears on top of its rarity: a rank (ranked skins) or the two colours of a chroma.
+export type Look = { rank?: number; colors?: string[] };
+
+// Attributes for the element that carries `cardClass`: the styles read them to draw the frame.
+export const lookProps = (look?: Look) => ({
+  "data-rank": look?.rank,
+  "data-chroma": look?.colors ? "" : undefined,
+  style: look?.colors
+    ? ({ "--chroma-a": look.colors[0], "--chroma-b": look.colors[1] ?? look.colors[0] } as CSSProperties)
+    : undefined,
+});
 
 const fromLor = (card: FaceCard) => card.image.includes("dd.b.pvp.net");
 

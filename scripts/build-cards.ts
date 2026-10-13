@@ -10,6 +10,7 @@ import {
   GREATEST_PLAYER,
   LANES,
   LEGENDS,
+  LEGENDS_STILL_PLAYING,
   MAPS,
   MODES,
   MONSTERS,
@@ -280,6 +281,13 @@ async function esportsCards(): Promise<Card[]> {
     // Still on a roster of a known league: the card with the photo wins. A namesake in a small
     // league does not count.
     if ((names.get(legend.handle.toLowerCase()) ?? 0) > 0) continue;
+    const onRoster = LEGENDS_STILL_PLAYING.includes(legend.handle)
+      ? cards.find((c) => c.type === "player" && c.name.toLowerCase() === legend.handle.toLowerCase())
+      : undefined;
+    if (onRoster) {
+      onRoster.rarity = legend.rarity;
+      continue;
+    }
     cards.push({
       id: `player:legend-${legend.handle.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
       type: "player",

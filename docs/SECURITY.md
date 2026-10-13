@@ -44,6 +44,8 @@ Seules entrées utilisateur : le pseudo (longueur et caractères validés côté
 
 ## Limitation des abus
 
+Chaque Server Action passe par `session()`, qui compte l’appel en base : 120 actions par minute et par joueur, au-delà l’action est refusée. Politique de sécurité de contenu complète en production (`next.config.ts`), avec `unsafe-inline` pour les scripts faute de nonce.
+
 La limite de boosters est contrôlée côté serveur, dans la même opération que l'écriture, pour qu'un double clic ne donne pas deux boosters. Limites de débit de connexion : celles de Supabase Auth.
 
 ## Services tiers
