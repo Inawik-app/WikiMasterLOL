@@ -9,6 +9,7 @@ import {
   DEVELOPERS,
   GREATEST_PLAYER,
   LANES,
+  ACCOUNTS,
   LEGENDS,
   LEGENDS_STILL_PLAYING,
   MAPS,
@@ -449,6 +450,32 @@ async function withModeArt(list: Handmade[]): Promise<Handmade[]> {
   );
 }
 
+// The players’ own League accounts: their profile icon over the art of a champion or skin card.
+function accountCards(cards: Card[]): Card[] {
+  return ACCOUNTS.map((account) => {
+    const [name, tag] = account.riotId.split("#");
+    const art = cards.find((c) => (c.type === "champion" || c.type === "skin") && c.name === account.art);
+    if (!art) throw new Error(`no champion or skin card named ${account.art}`);
+    return {
+      id: `account:${account.riotId.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+      type: "account",
+      name,
+      subtitle: `#${tag} · EUW`,
+      rarity: "transcendent",
+      image: `${CDRAGON}/default/v1/profile-icons/${account.icon}.jpg`,
+      icon: true,
+      backdrop: art.image,
+      splash: art.splash,
+      flavor: "Un invocateur bien réel, croisé un jour dans la Faille. Les cartes les plus rares du jeu ne sortent pas d’un studio.",
+      facts: [
+        ["Riot ID", account.riotId],
+        ["Serveur", "Europe Ouest"],
+        ["Champion fétiche", account.main],
+      ],
+    };
+  });
+}
+
 // Remote images are not all still there: a card whose image is gone falls back to an emblem,
 // or is dropped when it has nothing to draw one from.
 async function withLiveImages(cards: Card[]): Promise<Card[]> {
@@ -788,6 +815,7 @@ async function build(): Promise<Card[]> {
     ...creatorCards(),
     ...handmadeCards("server", SERVERS),
   );
+  cards.push(...(await withLiveImages(accountCards(cards))));
 
   // Source texts carry HTML tags and entities ("&nbsp;"): clean every text in one place.
   for (const card of cards) {
@@ -804,6 +832,7 @@ async function build(): Promise<Card[]> {
 const NAME_TAG: Record<CardType, string> = {
   champion: "Champion",
   skin: "Skin",
+  account: "Invocateur",
   region: "Région",
   item: "Objet",
   rune: "Rune",

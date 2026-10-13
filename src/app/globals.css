@@ -497,6 +497,19 @@
     scale: 2.4;
     filter: blur(16px) saturate(1.15) brightness(0.38);
   }
+  /* An icon set over real art (a player’s account over their champion). */
+  .card__backdrop {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+    filter: brightness(0.72);
+  }
+  .card__backdrop + .card__icon {
+    border-radius: 50%;
+  }
   .card__icon {
     position: relative;
     width: min(56%, 5.5rem);

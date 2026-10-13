@@ -325,3 +325,15 @@ export const LEGENDS: { handle: string; role: string; rarity: Rarity }[] = [
 export const GREATEST_PLAYER = "Faker";
 export const ALL_TIME_GREATS = ["Ruler", "Chovy", "Canyon", "ShowMaker", "Caps", "Rookie", "TheShy", "Keria", "Zeus", "Oner", "Gumayusi", "Knight", "JackeyLove", "Meiko", "Viper", "Scout", "Doran"];
 export const STARS = ["Rekkles", "Bdd", "Kiin", "Peyz", "Lehends", "Hans Sama", "Upset", "Elyoya", "Humanoid", "Bwipo", "CoreJJ", "Impact", "Tian", "Crisp", "Flandre", "Jiejie", "Pyosik", "Zeka", "Kingen", "Mikyx", "Wunder", "Blaber", "Inspired", "Razork", "Yike", "BrokenBlade", "Canna", "Kanavi", "369", "Bin", "Xun", "Elk", "Tarzan", "Aiming", "Delight", "Caliste", "Xiaohu"];
+
+// Easter egg: the League accounts of the people who play this game, as transcendent cards.
+// `icon` is the profile icon id, `art` the name of the champion or skin card shown behind it:
+// the profile background chosen in the client when known, else the champion with the most
+// mastery. Read by hand from the public profiles on 2026-10-13; update here when they change.
+export const ACCOUNTS: { riotId: string; icon: number; art: string; main: string }[] = [
+  { riotId: "Azoth999#AZOTH", icon: 5534, art: "HEARTSTEEL Aphelios", main: "Maître Yi" },
+  { riotId: "Amplix#EUW", icon: 6760, art: "Alistar", main: "Alistar" },
+  { riotId: "Splatox#EUW", icon: 4380, art: "Fiora", main: "Fiora" },
+  { riotId: "FigueUniforme#help", icon: 5488, art: "Nami", main: "Nami" },
+  { riotId: "IXKIXKIXI#IXIKI", icon: 29, art: "Akali", main: "Akali" },
+];
