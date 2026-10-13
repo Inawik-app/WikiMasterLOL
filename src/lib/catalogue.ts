@@ -19,6 +19,18 @@ export function toFaceCard({ id, type, name, rarity, image, splash, subtitle, fl
   return { id, type, name, rarity, image, splash, subtitle, flavor, url, facts, frames, focus, icon };
 }
 
+// A card as it travels in a list (the catalogue, a collection): without its long texts, which
+// make up most of the weight. They are fetched when the card is opened (`cardDetail`).
+export function toListCard(card: Card): FaceCard {
+  return { ...toFaceCard(card), flavor: undefined, facts: undefined, url: undefined };
+}
+
+let byId: Map<string, Card> | undefined;
+export function cardById(): Map<string, Card> {
+  byId ??= new Map(allCards().map((c) => [c.id, c]));
+  return byId;
+}
+
 let pool: Pool | undefined;
 export function cardPool(): Pool {
   if (!pool) {
@@ -31,14 +43,19 @@ export function cardPool(): Pool {
 // What the catalogue and collection pages hand to the browser. Cards from legendary up are
 // secret: only their number per rarity goes into the page. The ones the group has found arrive
 // later, from the server, for signed-in players.
-// ponytail: every card below legendary ships to the browser, about 4 MB before compression.
-// Acceptable for now; load the detail of a card when it is opened if the page gets slow.
+// ponytail: every card below legendary ships to the browser in its light form, about 2 MB
+// before compression. Send them page by page from the server if that gets slow again.
 export function catalogueProps() {
   const secretTotals = Object.fromEntries(RARITIES.map((r) => [r, 0])) as Record<Rarity, number>;
   const cards: FaceCard[] = [];
   for (const card of allCards()) {
     if (isSecret(card.rarity)) secretTotals[card.rarity]++;
-    else cards.push(toFaceCard(card));
+    else cards.push(toListCard(card));
   }
-  return { cards, secretTotals };
+  return { cards, secretTotals, total: allCards().length };
+}
+
+// A collection page ships no card at all: the server sends the ones the player owns.
+export function collectionProps() {
+  return { ...catalogueProps(), cards: [] as FaceCard[] };
 }

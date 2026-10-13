@@ -101,3 +101,44 @@ export const TYPE_LABEL: Record<CardType, string> = {
   map: "Cartes de jeu",
   mode: "Modes de jeu",
 };
+
+// The game or the place a card comes from. It follows from the type of the card.
+export const SOURCES = ["lol", "universe", "lor", "tft", "esport", "community"] as const;
+export type Source = (typeof SOURCES)[number];
+
+export const SOURCE_LABEL: Record<Source, string> = {
+  lol: "League of Legends",
+  universe: "Univers de Runeterra",
+  lor: "Legends of Runeterra",
+  tft: "Teamfight Tactics",
+  esport: "E-sport",
+  community: "Communauté",
+};
+
+export const TYPE_SOURCE: Record<CardType, Source> = {
+  champion: "lol",
+  skin: "lol",
+  ability: "lol",
+  summoner: "lol",
+  rune: "lol",
+  item: "lol",
+  monster: "lol",
+  map: "lol",
+  mode: "lol",
+  lane: "lol",
+  server: "lol",
+  region: "universe",
+  story: "universe",
+  video: "universe",
+  comic: "universe",
+  character: "lor",
+  place: "lor",
+  spell: "lor",
+  tft: "tft",
+  team: "esport",
+  player: "esport",
+  competition: "esport",
+  song: "esport",
+  person: "community",
+  creator: "community",
+};

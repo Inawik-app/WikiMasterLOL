@@ -24,7 +24,7 @@ function Who({ player, detail }: { player: Player; detail?: string }) {
 
 // The list of friends, the other players to add, and the collection of the friend picked.
 // `cards` and `secretTotals` are handed to the catalogue that shows that collection.
-export function Friends(props: { cards: FaceCard[]; secretTotals: Record<Rarity, number> }) {
+export function Friends(props: { cards: FaceCard[]; secretTotals: Record<Rarity, number>; total: number }) {
   const [supabase] = useState(createClient);
   // undefined: not known yet. null: signed out.
   const [state, setState] = useState<FriendsState | "unavailable" | null | undefined>(undefined);

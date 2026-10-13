@@ -105,3 +105,14 @@ Français, tutoiement, vocabulaire de la forge quand il vient naturellement (« 
 - Pas de dégradé sur du texte, pas de verre dépoli décoratif, pas de coins très arrondis.
 - Pas de rareté indiquée par la seule couleur.
 - Pas de quatrième couleur d'interface : les couleurs vives appartiennent aux gemmes et aux illustrations.
+
+### Révélation des cartes rares
+
+Sur la page Boosters, les cartes sont distribuées une à une sur l'établi. À partir de légendaire, la révélation monte d'un cran par rareté (classe `aura`) :
+
+- légendaire : un halo à la couleur de la gemme ;
+- mythique : la pièce s'assombrit, des rayons tournent ;
+- ultime : en plus, un éclair, une onde de choc et le nom de la rareté en travers de l'écran ;
+- transcendant : près de cinq secondes de noir, des rayons aux couleurs de toutes les gemmes, trois ondes et le titre plein écran.
+
+La carte la plus rare retournée continue d'éclairer l'établi. Tout mouvement est coupé avec `prefers-reduced-motion`.

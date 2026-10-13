@@ -2,9 +2,10 @@
 
 import type { User } from "@supabase/supabase-js";
 import { type CSSProperties, useCallback, useEffect, useState } from "react";
-import { claimSeal, forgeCard, openBooster, type OpenedCard } from "@/app/actions";
+import { claimSeal, forgeCard, openBooster, type OpenedCard, serverTime } from "@/app/actions";
 import { boosterStock, MAX_STOCK } from "@/lib/booster";
-import { RARITY_LABEL, type Rarity } from "@/lib/card";
+import { RARITIES, RARITY_LABEL, type Rarity } from "@/lib/card";
+import { isSecret } from "@/lib/forge";
 import { nextSealMilestone, PRICE, SEAL_CYCLE, SEAL_STEPS, sealReward, SECRET_RARITIES } from "@/lib/forge";
 import { RANKS } from "@/lib/upgrades";
 import { createClient } from "@/lib/supabase/client";
@@ -46,6 +47,9 @@ export function BoosterForge() {
   const [pack, setPack] = useState<Pack | null>(null);
   const [revealed, setRevealed] = useState(0); // how many cards on the bench are face up
   const [zoomed, setZoomed] = useState<FaceCard | null>(null); // the revealed card opened in large
+  const [clockLag, setClockLag] = useState(0); // server clock minus this device's clock
+  // The light show playing for a rare card just turned over. `key` restarts it for the next one.
+  const [burst, setBurst] = useState<{ rarity: Rarity; key: number } | null>(null);
 
   useEffect(() => {
     if (!supabase) return;
@@ -70,6 +74,13 @@ export function BoosterForge() {
     loadProfile();
   }, [loadProfile]);
 
+  useEffect(() => {
+    serverTime().then(
+      (time) => setClockLag(time - Date.now()),
+      () => {}, // without it the device's own clock is used
+    );
+  }, []);
+
   // The countdown only needs the minute.
   useEffect(() => {
     const tick = () => setNow(Date.now());
@@ -89,7 +100,24 @@ export function BoosterForge() {
   }
   if (!profile || now === null) return null;
 
-  const stock = boosterStock(new Date(profile.booster_anchor), new Date(now));
+  const stock = boosterStock(new Date(profile.booster_anchor), new Date(now + clockLag));
+
+  // Turns cards over up to `count`. From legendary up, the rarest one among them gets its light show.
+  const reveal = (count: number) => {
+    if (!pack) return;
+    const best = pack.cards
+      .slice(revealed, count)
+      .map((opened) => opened.card.rarity)
+      .reduce<Rarity | null>((a, b) => (a && RARITIES.indexOf(a) >= RARITIES.indexOf(b) ? a : b), null);
+    if (best && isSecret(best)) setBurst({ rarity: best, key: (burst?.key ?? 0) + 1 });
+    setRevealed(count);
+  };
+  // The rarest card face up: it keeps lighting the bench once its show is over.
+  const glow = pack?.cards
+    .slice(0, revealed)
+    .map((opened) => opened.card.rarity)
+    .filter(isSecret)
+    .sort((a, b) => RARITIES.indexOf(b) - RARITIES.indexOf(a))[0];
   const allRevealed = pack !== null && revealed >= pack.cards.length;
   const benchFree = !pack || allRevealed; // nothing left face down
 
@@ -157,7 +185,7 @@ export function BoosterForge() {
         </div>
         <p className="stock__text">
           <strong>{stock.available}</strong> {stock.available > 1 ? "boosters prêts" : "booster prêt"}
-          {stock.nextAt && <span> · le prochain {wait(stock.nextAt, now)}</span>}
+          {stock.nextAt && <span> · le prochain {wait(stock.nextAt, now + clockLag)}</span>}
         </p>
         <p className="stock__essence">
           <strong>{count.format(profile.essence)}</strong> essence
@@ -166,10 +194,11 @@ export function BoosterForge() {
 
       {pack && pack.cards.length > 0 && (
         <section className="pack" aria-label="Cartes à retourner">
+          {glow && <div className="pack__glow" data-rarity={glow} aria-hidden="true" />}
           <ol className="pack__cards" data-count={pack.cards.length}>
             {pack.cards.map((opened, i) =>
               i < revealed ? (
-                <li key={opened.card.id} className="pack__slot">
+                <li key={opened.card.id} className="pack__slot" data-rarity={opened.card.rarity}>
                   <button
                     type="button"
                     className={`${cardClass(opened.card)} card--revealed`}
@@ -191,13 +220,13 @@ export function BoosterForge() {
                   </p>
                 </li>
               ) : (
-                <li key={opened.card.id} className="pack__slot">
+                <li key={opened.card.id} className="pack__slot pack__slot--dealt" style={{ "--i": i } as CSSProperties}>
                   <button
                     type="button"
                     className="card card--back"
                     aria-label={`Révéler la carte ${i + 1}`}
                     disabled={i !== revealed}
-                    onClick={() => setRevealed(i + 1)}
+                    onClick={() => reveal(i + 1)}
                   >
                     <span className="card__art">
                       <svg viewBox="0 0 24 24" className="card__sigil" aria-hidden="true">
@@ -215,11 +244,33 @@ export function BoosterForge() {
         </section>
       )}
 
+      {burst && (
+        <>
+          {/* Behind the bench: the room goes dark and light pours out of the card. */}
+          <div
+            key={burst.key}
+            className="aura"
+            data-rarity={burst.rarity}
+            aria-hidden="true"
+            onAnimationEnd={(event) => event.target === event.currentTarget && setBurst(null)}
+          >
+            <span className="aura__rays" />
+            <span className="aura__ring" />
+            <span className="aura__ring" />
+          </div>
+          {/* In front of everything: the flash, and the name of the rarity. */}
+          <div key={`${burst.key}-front`} className="aura aura--front" data-rarity={burst.rarity} aria-hidden="true">
+            <span className="aura__flash" />
+            <span className="aura__title">{RARITY_LABEL[burst.rarity]}</span>
+          </div>
+        </>
+      )}
+
       <CardDialog card={zoomed} onClose={() => setZoomed(null)} />
 
       <div className="forge__actions">
         {pack && !allRevealed && pack.cards.length > 1 && (
-          <button type="button" className="forge__secondary" onClick={() => setRevealed(pack.cards.length)}>
+          <button type="button" className="forge__secondary" onClick={() => reveal(pack.cards.length)}>
             Tout révéler
           </button>
         )}
@@ -269,8 +320,13 @@ export function BoosterForge() {
         <div className="seal__head">
           <h2 id="shop-title">Forger avec l&apos;essence</h2>
           <p>
-            Une carte au hasard dans la rareté choisie, toujours une que tu n&apos;as pas. Les cartes moins rares
-            s&apos;achètent une à une depuis le catalogue.
+            L&apos;essence vient des doublons : une carte que tu possèdes déjà t&apos;en rend un peu, d&apos;autant plus
+            qu&apos;elle est rare. Deux exceptions : le doublon d&apos;un skin à chromas te donne un chroma à choisir, et
+            celui d&apos;un skin « héros de guerre » fait monter son rang.
+          </p>
+          <p>
+            Ici, l&apos;essence forge une carte au hasard dans la rareté choisie, toujours une que tu n&apos;as pas. Les
+            cartes moins rares s&apos;achètent une à une depuis le catalogue.
           </p>
         </div>
         <ul className="shop__list">

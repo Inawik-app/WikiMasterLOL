@@ -4,7 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { FaceCard } from "@/components/CardFace";
 import { drawBooster, ESSENCE } from "@/lib/booster";
 import type { Chroma, Rarity } from "@/lib/card";
-import { allCards, cardPool, toFaceCard } from "@/lib/catalogue";
+import { cardById, cardPool, toFaceCard, toListCard } from "@/lib/catalogue";
 import { isSecret, nextSealMilestone, PRICE, sealReward, SECRET_RARITIES } from "@/lib/forge";
 import { adminClient, currentUser } from "@/lib/supabase/server";
 import { duplicateRule, isRanked } from "@/lib/upgrades";
@@ -28,7 +28,6 @@ async function session(): Promise<
   return { user, admin };
 }
 
-const cardById = () => new Map(allCards().map((c) => [c.id, c]));
 
 // Supabase returns at most 1,000 rows per request: read page after page.
 async function readAll<Row>(page: (from: number, to: number) => PromiseLike<{ data: Row[] | null; error: unknown }>) {
@@ -189,6 +188,8 @@ export type CollectionState = {
   owned: Owned[];
   // Secret cards the group has found, with the name of the first player who got each.
   revealed: Revealed[];
+  // On a collection page: the cards owned below legendary (the rarer ones are in `revealed`).
+  cards?: FaceCard[];
   // Every card at least one player of the group owns.
   discovered: string[];
   essence: number;
@@ -197,7 +198,8 @@ export type CollectionState = {
 // What this player may see. Secret cards nobody has found are not sent at all, so they cannot
 // be read from the page; the browser only knows how many remain in each rarity.
 // With `friendId`, `owned` is that friend's collection instead of the player's own.
-export async function collectionState(friendId?: string): Promise<CollectionState | null> {
+// `withCards` adds the owned cards themselves, for the pages that do not ship the catalogue.
+export async function collectionState(friendId?: string, withCards = false): Promise<CollectionState | null> {
   const s = await session();
   if (s.failure) return null;
   if (friendId && !(await friendIds(s.admin, s.user.id)).has(friendId)) return null;
@@ -221,7 +223,7 @@ export async function collectionState(friendId?: string): Promise<CollectionStat
   const revealed: Revealed[] = [];
   for (const d of discoveries) {
     const card = cards.get(d.card_id);
-    if (card && isSecret(card.rarity)) revealed.push({ card: toFaceCard(card), by: d.username });
+    if (card && isSecret(card.rarity)) revealed.push({ card: toListCard(card), by: d.username });
   }
   return {
     owned: owned.map((row) => {
@@ -240,7 +242,13 @@ export async function collectionState(friendId?: string): Promise<CollectionStat
         picks: options && row.chroma_picks,
       };
     }),
-    revealed,     discovered: discoveries.map((d) => d.card_id),
+    revealed,
+    cards: withCards
+      ? owned.flatMap((row) => {
+          const card = cards.get(row.card_id);
+          return card && !isSecret(card.rarity) ? [toListCard(card)] : [];
+        })
+      : undefined,     discovered: discoveries.map((d) => d.card_id),
     essence: profile.data?.essence ?? 0,
   };
 }
@@ -281,6 +289,20 @@ export async function setFavorite(cardId: string, favorite: boolean): Promise<{ 
     .eq("card_id", cardId);
   if (error) console.error("setFavorite failed:", error.code);
   return { ok: !error };
+}
+
+// The full card, with its texts, when it is opened. A secret card is only given once a player
+// has found it.
+export async function cardDetail(cardId: string): Promise<FaceCard | null> {
+  const card = typeof cardId === "string" ? cardById().get(cardId) : undefined;
+  if (!card) return null;
+  if (isSecret(card.rarity)) {
+    const s = await session();
+    if (s.failure) return null;
+    const { data } = await s.admin.from("discoveries").select("card_id").eq("card_id", cardId).limit(1);
+    if (!data?.length) return null;
+  }
+  return toFaceCard(card);
 }
 
 // --- Friends -------------------------------------------------------------------
@@ -353,4 +375,10 @@ export async function deleteAccount(): Promise<{ ok: true } | { ok: false; reaso
   const { error } = await s.admin.auth.admin.deleteUser(s.user.id);
   if (error) console.error("deleteAccount failed:", error.code);
   return error ? { ok: false, reason: "unavailable" } : { ok: true };
+}
+
+// The server's clock. The booster stock is counted from it, not from the player's device:
+// a device a few seconds late showed one booster fewer right after opening one.
+export async function serverTime() {
+  return Date.now();
 }
