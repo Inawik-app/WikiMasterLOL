@@ -342,6 +342,39 @@
     font-variant-numeric: tabular-nums;
     color: var(--color-ivory);
   }
+  .tally__tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem 1.5rem;
+  }
+  .sort {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .sort select {
+    min-height: 2.75rem;
+    padding: 0 0.75rem;
+    border: 1px solid var(--color-brass-dim);
+    border-radius: 2px;
+    background: var(--color-forge-900);
+    color: var(--color-ivory);
+  }
+  /* A favourite carries an ember star on its corner. */
+  .card--fav::after {
+    content: "★";
+    position: absolute;
+    z-index: 3;
+    top: 0.35rem;
+    left: 0.45rem;
+    font-size: 1.15rem;
+    line-height: 1;
+    color: var(--color-ember);
+    text-shadow: 0 1px 3px rgb(0 0 0 / 0.9);
+    pointer-events: none;
+  }
   .switch {
     display: flex;
     align-items: center;
@@ -1296,6 +1329,17 @@
     .user__signout {
       padding: 0.4rem 0.6rem;
       font-size: 0.9rem;
+    }
+    /* The count on its own line, sorting and filters underneath. */
+    .tally {
+      flex-wrap: wrap;
+    }
+    .tally__tools {
+      flex: 1 1 100%;
+      justify-content: space-between;
+    }
+    .sort {
+      white-space: nowrap;
     }
     /* Big enough for a thumb. */
     .user__signout,

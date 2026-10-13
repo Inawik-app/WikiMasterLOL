@@ -18,10 +18,10 @@ Ouvre des boosters de cartes League of Legends et complète ta collection avant 
 |---|---|---|
 | Catalogue | — | `npm run cards` produit un JSON avec champions, skins, compétences, sorts d'invocateur, runes, objets, récits, vidéos, cartes d'univers, e-sport, Teamfight Tactics, monstres, cartes, modes, musiques et personnalités, chacune avec une rareté et une image ; deux cartes ne portent jamais le même nom (les homonymes reçoivent une étiquette : « Annie - TFT Set 3 », « Bastion - Runeterra ») |
 | Compte | se connecter | la collection est retrouvée depuis un autre appareil |
-| Booster | ouvrir un booster sur la page « Boosters » et retourner ses cartes une à une | les cartes tirées apparaissent dans sa collection ; la limite d'ouverture est respectée côté serveur |
+| Booster | ouvrir un booster sur la page « Boosters » et retourner ses cartes une à une ; une carte retournée s'ouvre en grand d'un clic | les cartes tirées apparaissent dans sa collection ; la limite d'ouverture est respectée côté serveur |
 | Ordre des pages | Boosters en accueil (`/`), puis Collection, puis Catalogue | — |
 | Catalogue | parcourir toutes les cartes, filtrer celles que le groupe a découvertes, acheter avec l'essence | une carte secrète non trouvée reste une silhouette |
-| Collection | page à part : uniquement les cartes qu'il possède, mêmes filtres | le compteur « x sur total » est juste |
+| Collection | page à part : uniquement les cartes qu'il possède, mêmes filtres ; tri par rareté (par défaut), dernières obtenues ou ordre alphabétique ; cartes favorites (étoile, filtre) | le compteur « x sur total » est juste |
 | Amis | page « Amis » : ajouter un joueur du jeu (immédiat, réciproque, sans demande), le retirer, ouvrir sa collection | la collection d'un ami affiche ses cartes en lecture seule |
 
 ## Hors périmètre

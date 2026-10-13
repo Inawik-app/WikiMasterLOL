@@ -7,7 +7,8 @@ import { boosterStock, MAX_STOCK } from "@/lib/booster";
 import { RARITY_LABEL, type Rarity } from "@/lib/card";
 import { nextSealMilestone, PRICE, SEAL_CYCLE, SEAL_STEPS, sealReward, SECRET_RARITIES } from "@/lib/forge";
 import { createClient } from "@/lib/supabase/client";
-import { CardFace, cardClass } from "./CardFace";
+import { CardDialog } from "./CardDialog";
+import { CardFace, cardClass, cardLabel, type FaceCard } from "./CardFace";
 import { Gem, GemDefs } from "./Gem";
 
 type Profile = { booster_anchor: string; essence: number; seal_days: number; seal_claimed_day: number };
@@ -43,6 +44,7 @@ export function BoosterForge() {
   const [message, setMessage] = useState<string | null>(null);
   const [pack, setPack] = useState<Pack | null>(null);
   const [revealed, setRevealed] = useState(0); // how many cards on the bench are face up
+  const [zoomed, setZoomed] = useState<FaceCard | null>(null); // the revealed card opened in large
 
   useEffect(() => {
     if (!supabase) return;
@@ -165,9 +167,15 @@ export function BoosterForge() {
             {pack.cards.map((opened, i) =>
               i < revealed ? (
                 <li key={opened.card.id} className="pack__slot">
-                  <div className={`${cardClass(opened.card)} card--revealed`} data-rarity={opened.card.rarity}>
+                  <button
+                    type="button"
+                    className={`${cardClass(opened.card)} card--revealed`}
+                    data-rarity={opened.card.rarity}
+                    aria-label={`${cardLabel(opened.card)}, voir en grand`}
+                    onClick={() => setZoomed(opened.card)}
+                  >
                     <CardFace card={opened.card} />
-                  </div>
+                  </button>
                   <p className="pack__note" data-rarity={opened.card.rarity}>
                     <span>{RARITY_LABEL[opened.card.rarity]}</span>
                     {opened.isNew ? "Nouvelle carte" : `Doublon · +${opened.essence} essence`}
@@ -197,6 +205,8 @@ export function BoosterForge() {
           </p>
         </section>
       )}
+
+      <CardDialog card={zoomed} onClose={() => setZoomed(null)} />
 
       <div className="forge__actions">
         {pack && !allRevealed && pack.cards.length > 1 && (

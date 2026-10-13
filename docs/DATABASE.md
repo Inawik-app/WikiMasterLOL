@@ -15,7 +15,7 @@ Postgres chez Supabase, palier gratuit (500 Mo, mise en pause après 7 jours san
 - `discoveries` — vue : le premier joueur à avoir obtenu chaque carte. Sert à révéler les cartes secrètes au groupe.
 - `open_booster` — fonction qui ouvre un booster en une seule transaction : elle retire un booster de la réserve, ajoute les cartes, convertit les doublons en essence. Seul le serveur peut l'appeler.
 - `friendships` — une amitié = deux lignes `(user_id, friend_id)`, une dans chaque sens, écrites et supprimées ensemble par le serveur. Pas de demande à accepter.
-- `collection` — une ligne par (joueur, carte). La colonne `copies` reste à 1 : les doublons deviennent de l'essence. `card_id` est l'identifiant de la carte dans `src/data/cards.json` : pas de table `cards`, donc pas de clé étrangère dessus.
+- `collection` — une ligne par (joueur, carte). La colonne `copies` reste à 1 : les doublons deviennent de l'essence. `favorite` marque les cartes favorites du joueur ; `first_obtained_at` sert au tri « dernières obtenues ». `card_id` est l'identifiant de la carte dans `src/data/cards.json` : pas de table `cards`, donc pas de clé étrangère dessus.
 
 Supabase renvoie au plus 1 000 lignes par requête : le serveur lit les collections page par page (`readAll` dans `src/app/actions.ts`).
 

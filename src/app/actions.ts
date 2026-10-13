@@ -147,7 +147,8 @@ export async function forgeCard(rarity: Rarity): Promise<PurchaseResult> {
 
 export type Revealed = { card: FaceCard; by: string };
 export type CollectionState = {
-  owned: string[];
+  // The cards owned, with when each was first obtained and whether it is a favourite.
+  owned: { id: string; at: string; fav: boolean }[];
   // Secret cards the group has found, with the name of the first player who got each.
   revealed: Revealed[];
   // Every card at least one player of the group owns.
@@ -163,7 +164,14 @@ export async function collectionState(friendId?: string): Promise<CollectionStat
   if (s.failure) return null;
   if (friendId && !(await friendIds(s.admin, s.user.id)).has(friendId)) return null;
   const [owned, discoveries, profile] = await Promise.all([
-    ownedIds(s.admin, friendId ?? s.user.id),
+    readAll<{ card_id: string; first_obtained_at: string; favorite: boolean }>((from, to) =>
+      s.admin
+        .from("collection")
+        .select("card_id, first_obtained_at, favorite")
+        .eq("user_id", friendId ?? s.user.id)
+        .order("card_id")
+        .range(from, to),
+    ),
     // ponytail: reads every discovery, then keeps the secret rarities. Fine for a group of
     // friends (at most one row per card); filter in SQL if the table grows large.
     readAll<{ card_id: string; username: string }>((from, to) =>
@@ -177,7 +185,24 @@ export async function collectionState(friendId?: string): Promise<CollectionStat
     const card = cards.get(d.card_id);
     if (card && isSecret(card.rarity)) revealed.push({ card: toFaceCard(card), by: d.username });
   }
-  return { owned: [...owned], revealed, discovered: discoveries.map((d) => d.card_id), essence: profile.data?.essence ?? 0 };
+  return {
+    owned: owned.map((row) => ({ id: row.card_id, at: row.first_obtained_at, fav: row.favorite })),
+    revealed,     discovered: discoveries.map((d) => d.card_id),
+    essence: profile.data?.essence ?? 0,
+  };
+}
+
+// Marks or unmarks one of the player's own cards as a favourite.
+export async function setFavorite(cardId: string, favorite: boolean): Promise<{ ok: boolean }> {
+  const s = await session();
+  if (s.failure || typeof cardId !== "string") return { ok: false };
+  const { error } = await s.admin
+    .from("collection")
+    .update({ favorite: favorite === true })
+    .eq("user_id", s.user.id)
+    .eq("card_id", cardId);
+  if (error) console.error("setFavorite failed:", error.code);
+  return { ok: !error };
 }
 
 // --- Friends -------------------------------------------------------------------
