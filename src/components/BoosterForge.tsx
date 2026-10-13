@@ -5,7 +5,7 @@ import { type CSSProperties, useCallback, useEffect, useState } from "react";
 import { claimSeal, forgeCard, openBooster, type OpenedCard, serverTime } from "@/app/actions";
 import { boosterStock, MAX_STOCK } from "@/lib/booster";
 import { RARITIES, RARITY_LABEL, type Rarity } from "@/lib/card";
-import { isSecret } from "@/lib/forge";
+import { essences, essenceWord, isSecret } from "@/lib/forge";
 import { nextSealMilestone, PRICE, SEAL_CYCLE, SEAL_STEPS, sealReward, SECRET_RARITIES } from "@/lib/forge";
 import { RANKS } from "@/lib/upgrades";
 import { createClient } from "@/lib/supabase/client";
@@ -144,7 +144,7 @@ export function BoosterForge() {
       if (!result.ok) return result;
       if (!result.card) {
         // Every card of the rarity is already owned: the reward was paid in essence.
-        setMessage(`Tu as déjà toutes les cartes de ce palier : le sceau te donne ${count.format(result.essence)} essence.`);
+        setMessage(`Tu as déjà toutes les cartes de ce palier : le sceau te donne ${essences(result.essence)}.`);
         return { ok: true, cards: [] };
       }
       return { ok: true, cards: [{ card: result.card, isNew: true, essence: 0 }] };
@@ -162,7 +162,7 @@ export function BoosterForge() {
       ? "Clique sur la carte éclairée pour la retourner."
       : pack.from === "booster"
         ? gained
-          ? `Booster terminé. Les doublons t'ont rapporté ${count.format(gained)} essence.`
+          ? `Booster terminé. Les doublons t'ont rapporté ${essences(gained)}.`
           : pack.cards.every((c) => c.isNew)
             ? "Booster terminé. Cinq nouvelles cartes pour ta collection."
             : "Booster terminé. Tes doublons ont amélioré des cartes de ta collection."
@@ -185,11 +185,17 @@ export function BoosterForge() {
           ))}
         </div>
         <p className="stock__text">
-          <strong>{stock.available}</strong> {stock.available > 1 ? "boosters prêts" : "booster prêt"}
+          {stock.available ? (
+            <>
+              <strong>{stock.available}</strong> {stock.available > 1 ? "boosters prêts" : "booster prêt"}
+            </>
+          ) : (
+            "Aucun booster prêt"
+          )}
           {stock.nextAt && <span> · le prochain {wait(stock.nextAt, now + clockLag)}</span>}
         </p>
         <p className="stock__essence">
-          <strong>{count.format(profile.essence)}</strong> essence
+          <strong>{count.format(profile.essence)}</strong> {essenceWord(profile.essence)}
         </p>
       </section>
 
@@ -217,7 +223,7 @@ export function BoosterForge() {
                         ? `Doublon · rang ${RANKS[opened.rank - 1]}`
                         : opened.chroma
                           ? "Doublon · un chroma à choisir"
-                          : `Doublon · +${opened.essence} essence`}
+                          : `Doublon · +${essences(opened.essence)}`}
                   </p>
                 </li>
               ) : (
@@ -342,7 +348,7 @@ export function BoosterForge() {
               >
                 <Gem rarity={rarity} />
                 <span className="shop__name">{RARITY_LABEL[rarity]}</span>
-                <span className="shop__price">{count.format(PRICE[rarity])} essence</span>
+                <span className="shop__price">{essences(PRICE[rarity])}</span>
               </button>
             </li>
           ))}

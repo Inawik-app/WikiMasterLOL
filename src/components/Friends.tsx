@@ -12,6 +12,7 @@ import {
   removeFriend,
 } from "@/app/actions";
 import type { Rarity } from "@/lib/card";
+import { essences } from "@/lib/forge";
 import { createClient } from "@/lib/supabase/client";
 import type { FaceCard } from "./CardFace";
 import { Catalogue } from "./Catalogue";
@@ -85,7 +86,7 @@ export function Friends(props: { cards: FaceCard[]; secretTotals: Record<Rarity,
   const amount = Math.max(0, Math.floor(Number(essence) || 0));
   const giftLabel = [
     picked.size > 0 && `${count.format(picked.size)} ${picked.size > 1 ? "cartes" : "carte"}`,
-    amount > 0 && `${count.format(amount)} essence`,
+    amount > 0 && essences(amount),
   ]
     .filter(Boolean)
     .join(" et ");

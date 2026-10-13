@@ -38,3 +38,8 @@ export function sealReward(day: number): Rarity {
   const dayInCycle = day % SEAL_CYCLE || SEAL_CYCLE;
   return SEAL_STEPS.find(([step]) => step === dayInCycle)![1];
 }
+
+// "1 essence", "1 500 essences": the count with its word, in French.
+const french = new Intl.NumberFormat("fr-FR");
+export const essenceWord = (amount: number) => (amount > 1 ? "essences" : "essence");
+export const essences = (amount: number) => `${french.format(amount)} ${essenceWord(amount)}`;

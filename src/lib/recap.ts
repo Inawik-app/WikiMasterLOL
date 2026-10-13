@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { RARITIES, RARITY_LABEL, type Rarity } from "./card";
 import { cardById } from "./catalogue";
-import { isSecret } from "./forge";
+import { essences, isSecret } from "./forge";
 import { playerRank } from "./level";
 import { luck, oddsText, rareCardsPerBooster } from "./luck";
 import { BOOSTER_SIZE } from "./booster";
@@ -124,7 +124,7 @@ export async function weeklyRecap(admin: SupabaseClient, now = new Date()): Prom
         value: generous
           ? `🎁 **${generous.name}** · ${[
               generous.givenCards > 0 && plural(generous.givenCards, "carte donnée", "cartes données"),
-              generous.givenEssence > 0 && `${count.format(generous.givenEssence)} essence offerte`,
+              generous.givenEssence > 0 && `${essences(generous.givenEssence)} ${generous.givenEssence > 1 ? "offertes" : "offerte"}`,
             ]
               .filter(Boolean)
               .join(" et ")}.`

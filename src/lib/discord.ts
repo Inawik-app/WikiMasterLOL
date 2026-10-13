@@ -1,4 +1,5 @@
 import { type Card, RARITY_LABEL, type Rarity } from "./card";
+import { essences } from "./forge";
 
 // Server only. Announcements go to the group's Discord server through a webhook: one URL, set
 // in DISCORD_WEBHOOK_URL, and no bot to host. Without it, nothing is sent.
@@ -55,7 +56,7 @@ export function announceDiscovery(player: string, card: Pick<Card, "name" | "rar
 export function announceGift(from: string, to: string, cards: number, essence: number) {
   const parts = [
     cards > 0 && `${cards} ${cards > 1 ? "cartes" : "carte"}`,
-    essence > 0 && `${new Intl.NumberFormat("fr-FR").format(essence)} essence`,
+    essence > 0 && essences(essence),
   ].filter(Boolean);
   return post({ title: "Un cadeau à la forge", description: `**${from}** offre ${parts.join(" et ")} à **${to}**.` });
 }

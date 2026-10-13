@@ -3,7 +3,7 @@
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { buyCard, cardDetail, collectionState, type CollectionState, type Owned, pickChroma, setFavorite } from "@/app/actions";
 import { type CardType, RARITIES, RARITY_LABEL, type Rarity, type Source, SOURCE_LABEL, SOURCES, TYPE_LABEL, TYPE_SOURCE } from "@/lib/card";
-import { isSecret, PRICE, SECRET_RARITIES } from "@/lib/forge";
+import { essences, isSecret, PRICE, SECRET_RARITIES } from "@/lib/forge";
 import { RANKS } from "@/lib/upgrades";
 import { createClient } from "@/lib/supabase/client";
 import { CardDialog } from "./CardDialog";
@@ -283,9 +283,9 @@ export function Catalogue({
             disabled={buying || state.essence < PRICE[opened.card.rarity]}
             onClick={() => buy(opened)}
           >
-            {buying ? "Achat…" : `Acheter · ${count.format(PRICE[opened.card.rarity])} essence`}
+            {buying ? "Achat…" : `Acheter · ${essences(PRICE[opened.card.rarity])}`}
           </button>
-          <p>Tu as {count.format(state.essence)} essence.</p>
+          <p>Tu as {essences(state.essence)}.</p>
         </>
       )}
       {notice && <p role="alert">{notice}</p>}
