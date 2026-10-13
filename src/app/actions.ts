@@ -418,10 +418,42 @@ export async function giveToFriend(friendId: string, cardIds: string[], essence:
   }
   const { data: names } = await s.admin.from("profiles").select("id, username").in("id", [s.user.id, friendId]);
   const name = (id: string) => names?.find((p) => p.id === id)?.username ?? "Un joueur";
-  // For the weekly recap. Not vital either.
-  await s.admin.from("gifts").insert({ from_id: s.user.id, to_id: friendId, cards: cards.length, essence: amount });
+  // For the weekly recap and the notice shown to the receiver. Not vital either.
+  await s.admin
+    .from("gifts")
+    .insert({ from_id: s.user.id, to_id: friendId, cards: cards.length, essence: amount, card_ids: cards });
   await announceGift(name(s.user.id), name(friendId), cards.length, amount);
   return { ok: true };
+}
+
+export type ReceivedGift = { from: string; cards: string[]; essence: number; at: string };
+
+// The gifts this player has received and not yet acknowledged, oldest first.
+export async function pendingGifts(): Promise<ReceivedGift[]> {
+  const s = await session();
+  if (s.failure) return [];
+  const { data: gifts } = await s.admin
+    .from("gifts")
+    .select("from_id, card_ids, essence, given_at")
+    .eq("to_id", s.user.id)
+    .eq("seen", false)
+    .order("given_at");
+  if (!gifts?.length) return [];
+  const { data: givers } = await s.admin.from("profiles").select("id, username").in("id", [...new Set(gifts.map((g) => g.from_id))]);
+  const cards = cardById();
+  return gifts.map((gift) => ({
+    from: givers?.find((p) => p.id === gift.from_id)?.username ?? "Un joueur",
+    cards: (gift.card_ids as string[]).flatMap((id) => cards.get(id)?.name ?? []),
+    essence: gift.essence,
+    at: gift.given_at,
+  }));
+}
+
+// Marks as seen the gifts received up to `until` (the date of the last one shown).
+export async function dismissGifts(until: string): Promise<void> {
+  const s = await session();
+  if (s.failure || typeof until !== "string" || Number.isNaN(Date.parse(until))) return;
+  await s.admin.from("gifts").update({ seen: true }).eq("to_id", s.user.id).lte("given_at", until);
 }
 
 // --- Account -------------------------------------------------------------------

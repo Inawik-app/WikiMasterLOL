@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Barlow_Semi_Condensed, Marcellus } from "next/font/google";
+import { GiftNotice } from "@/components/GiftNotice";
 import { SiteFooter } from "@/components/SiteFooter";
 import "./globals.css";
 
@@ -26,6 +27,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body>
         {children}
         <SiteFooter />
+        <GiftNotice />
       </body>
     </html>
   );
