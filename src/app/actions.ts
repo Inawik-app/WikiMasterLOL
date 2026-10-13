@@ -3,10 +3,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { FaceCard } from "@/components/CardFace";
 import { drawBooster, ESSENCE } from "@/lib/booster";
-import type { Rarity } from "@/lib/card";
+import type { Chroma, Rarity } from "@/lib/card";
 import { allCards, cardPool, toFaceCard } from "@/lib/catalogue";
 import { isSecret, nextSealMilestone, PRICE, sealReward, SECRET_RARITIES } from "@/lib/forge";
 import { adminClient, currentUser } from "@/lib/supabase/server";
+import { duplicateRule, isRanked } from "@/lib/upgrades";
 
 // Every action follows the same pattern: find out who is asking, decide here on the server,
 // then let one database function record the result in a single transaction.
@@ -20,6 +21,10 @@ async function session(): Promise<
   if (!user) return { failure: "signed-out" };
   const admin = adminClient();
   if (!admin) return { failure: "unavailable" };
+  // At most 120 actions a minute per player: far above normal play, low enough to stop a script.
+  // If the counter itself fails, the action goes through.
+  const { data: allowed } = await admin.rpc("rate_limit", { p_user: user.id, p_max: 120, p_seconds: 60 });
+  if (allowed === false) return { failure: "unavailable" };
   return { user, admin };
 }
 
@@ -51,7 +56,9 @@ function randomMissing(rarity: Rarity, owned: Set<string>) {
 
 // --- Boosters ----------------------------------------------------------------
 
-export type OpenedCard = { card: FaceCard; isNew: boolean; essence: number };
+// `rank` is set when a duplicate raised the rank of a ranked skin, `chroma` when it earned a
+// chroma to pick; otherwise a duplicate gives `essence`.
+export type OpenedCard = { card: FaceCard; isNew: boolean; essence: number; rank?: number; chroma?: boolean };
 export type BoosterResult = { ok: true; cards: OpenedCard[] } | Failure<"empty">;
 
 // Opens one booster. Nothing from the browser decides the content: the cards are drawn here,
@@ -60,11 +67,15 @@ export async function openBooster(): Promise<BoosterResult> {
   const s = await session();
   if (s.failure) return { ok: false, reason: s.failure };
 
+  const cards = cardById();
   const drawn = drawBooster(cardPool());
+  const rules = drawn.map((d) => duplicateRule(cards.get(d.id)!));
   const { data, error } = await s.admin.rpc("open_booster", {
     p_user: s.user.id,
     p_cards: drawn.map((d) => d.id),
     p_essences: drawn.map((d) => ESSENCE[d.rarity]),
+    p_modes: rules.map((r) => r.mode),
+    p_caps: rules.map((r) => r.cap),
   });
   if (error) {
     if (error.message.includes("no_booster")) return { ok: false, reason: "empty" };
@@ -72,12 +83,17 @@ export async function openBooster(): Promise<BoosterResult> {
     return { ok: false, reason: "unavailable" };
   }
 
-  const cards = cardById();
   return {
     ok: true,
-    cards: (data as { card: string; is_new: boolean }[]).map((row) => {
+    cards: (data as { card: string; outcome: "new" | "essence" | "rank" | "chroma"; level: number | null }[]).map((row) => {
       const card = cards.get(row.card)!;
-      return { card: toFaceCard(card), isNew: row.is_new, essence: row.is_new ? 0 : ESSENCE[card.rarity] };
+      return {
+        card: toFaceCard(card),
+        isNew: row.outcome === "new",
+        essence: row.outcome === "essence" ? ESSENCE[card.rarity] : 0,
+        rank: row.outcome === "rank" ? (row.level ?? undefined) : undefined,
+        chroma: row.outcome === "chroma" || undefined,
+      };
     }),
   };
 }
@@ -143,12 +159,34 @@ export async function forgeCard(rarity: Rarity): Promise<PurchaseResult> {
   return pay(s.admin, s.user.id, cardId, rarity);
 }
 
+type OwnedRow = {
+  card_id: string;
+  first_obtained_at: string;
+  favorite: boolean;
+  copies: number;
+  chromas: number[];
+  chroma: number | null;
+  chroma_picks: number;
+};
+
 // --- Collection ----------------------------------------------------------------
 
 export type Revealed = { card: FaceCard; by: string };
+// A card owned: when it was first obtained, whether it is a favourite, and its upgrades.
+// `rank` only exists on ranked skins. `options` lists the chromas of a skin that has some;
+// `unlocked` are the ones the player owns, `chroma` the one worn, `picks` the ones left to choose.
+export type Owned = {
+  id: string;
+  at: string;
+  fav: boolean;
+  rank?: number;
+  options?: Chroma[];
+  unlocked?: number[];
+  chroma?: number;
+  picks?: number;
+};
 export type CollectionState = {
-  // The cards owned, with when each was first obtained and whether it is a favourite.
-  owned: { id: string; at: string; fav: boolean }[];
+  owned: Owned[];
   // Secret cards the group has found, with the name of the first player who got each.
   revealed: Revealed[];
   // Every card at least one player of the group owns.
@@ -164,10 +202,10 @@ export async function collectionState(friendId?: string): Promise<CollectionStat
   if (s.failure) return null;
   if (friendId && !(await friendIds(s.admin, s.user.id)).has(friendId)) return null;
   const [owned, discoveries, profile] = await Promise.all([
-    readAll<{ card_id: string; first_obtained_at: string; favorite: boolean }>((from, to) =>
+    readAll<OwnedRow>((from, to) =>
       s.admin
         .from("collection")
-        .select("card_id, first_obtained_at, favorite")
+        .select("card_id, first_obtained_at, favorite, copies, chromas, chroma, chroma_picks")
         .eq("user_id", friendId ?? s.user.id)
         .order("card_id")
         .range(from, to),
@@ -186,10 +224,50 @@ export async function collectionState(friendId?: string): Promise<CollectionStat
     if (card && isSecret(card.rarity)) revealed.push({ card: toFaceCard(card), by: d.username });
   }
   return {
-    owned: owned.map((row) => ({ id: row.card_id, at: row.first_obtained_at, fav: row.favorite })),
+    owned: owned.map((row) => {
+      const card = cards.get(row.card_id);
+      const ranked = card && isRanked(card);
+      // A ranked skin climbs ranks instead of unlocking chromas.
+      const options = !ranked && card?.chromas?.length ? card.chromas : undefined;
+      return {
+        id: row.card_id,
+        at: row.first_obtained_at,
+        fav: row.favorite,
+        rank: ranked ? row.copies : undefined,
+        options,
+        unlocked: options && row.chromas,
+        chroma: (options && row.chroma) ?? undefined,
+        picks: options && row.chroma_picks,
+      };
+    }),
     revealed,     discovered: discoveries.map((d) => d.card_id),
     essence: profile.data?.essence ?? 0,
   };
+}
+
+// Wears a chroma on one of the player's skins: one already unlocked, a new one paid with a pick
+// earned from a duplicate, or null to go back to the original look.
+export async function pickChroma(cardId: string, chromaId: number | null): Promise<{ ok: boolean }> {
+  const s = await session();
+  if (s.failure || typeof cardId !== "string") return { ok: false };
+  const mine = s.admin.from("collection");
+  if (chromaId === null) {
+    const { error } = await mine.update({ chroma: null }).eq("user_id", s.user.id).eq("card_id", cardId);
+    return { ok: !error };
+  }
+  // The chroma must be one of this skin's: the database does not know the catalogue.
+  if (!cardById().get(cardId)?.chromas?.some((c) => c.id === chromaId)) return { ok: false };
+  // Already unlocked: just wear it. The filter on `chromas` makes this a no-op otherwise.
+  const { data: worn, error } = await mine
+    .update({ chroma: chromaId })
+    .eq("user_id", s.user.id)
+    .eq("card_id", cardId)
+    .contains("chromas", [chromaId])
+    .select("card_id");
+  if (error) return { ok: false };
+  if (worn.length) return { ok: true };
+  const { error: locked } = await s.admin.rpc("unlock_chroma", { p_user: s.user.id, p_card: cardId, p_chroma: chromaId });
+  return { ok: !locked };
 }
 
 // Marks or unmarks one of the player's own cards as a favourite.

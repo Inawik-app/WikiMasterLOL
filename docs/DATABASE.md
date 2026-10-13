@@ -19,7 +19,9 @@ Postgres chez Supabase, palier gratuit (500 Mo, mise en pause après 7 jours san
 
 Supabase renvoie au plus 1 000 lignes par requête : le serveur lit les collections page par page (`readAll` dans `src/app/actions.ts`).
 
-À DÉCIDER : comment stocker les chromas obtenus (dépend de la mécanique de déblocage, voir `PRD.md`). Piste : une ligne par (joueur, carte, chroma).
+Améliorations d’une carte, sur sa ligne de `collection` : `copies` est le rang d’un skin « héros de guerre » (1 = Fer, 10 = Challenger) ; `chromas` les chromas débloqués, `chroma` celui qui est porté, `chroma_picks` ceux gagnés par un doublon et pas encore choisis. `open_booster` (version à cinq arguments) applique ces règles, `unlock_chroma` dépense un choix.
+
+`rate_limits` compte les actions serveur d’un joueur par minute (fonction `rate_limit`).
 
 ## Règles
 

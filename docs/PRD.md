@@ -52,7 +52,7 @@ Les amis reviennent ouvrir leurs boosters sans qu'on le leur rappelle.
 
 ## Questions ouvertes
 
-- À DÉCIDER : comment débloquer les différents chromas d'un skin (voir « Chromas »).
+- Chromas et rangs : décidés le 2026-10-13, voir « Chromas et rangs ».
 - À DÉCIDER : quelles familles de cartes ajouter pour se rapprocher de 10 000 (le catalogue en compte 8 729 ; emotes, icônes et balises sont exclus). Pistes restantes : optimisations et petites légendes de Teamfight Tactics.
 - À DÉCIDER : nom du jeu.
 
@@ -131,6 +131,10 @@ Tout est réglé dans `src/lib/forge.ts`.
 - **Secret.** Les cartes en dessous de légendaire sont toujours visibles, éteintes tant qu'on ne les possède pas. À partir de légendaire, une carte reste une silhouette mystère jusqu'à ce qu'un joueur du groupe la trouve ; elle est alors révélée à tous, avec le nom de celui qui l'a découverte. Les cartes secrètes non découvertes ne sont jamais envoyées au navigateur.
 - **Sceau de forge.** Un point par jour où l'on ouvre au moins un booster (jour compté à l'heure de Paris). La jauge ne se vide jamais. Sur chaque cycle de 28 jours : une carte mythique au jour 14, une ultime au jour 21, une transcendante au jour 28, toujours une carte que le joueur n'a pas. S'il les a toutes, il reçoit le prix de forge en essence.
 
-## Chromas
+## Chromas et rangs (décidé le 2026-10-13)
 
-Un chroma n'est pas une carte : c'est une variante d'une carte de skin. Quand un skin sort d'un booster, il peut sortir avec un effet visuel aux couleurs d'un de ses chromas, tiré au hasard. Le catalogue contient déjà les chromas de chaque skin (nom et couleurs).
+Réglé dans `src/lib/upgrades.ts`. Un doublon ne donne plus toujours de l’essence :
+
+- **Skin avec chromas** : chaque doublon donne un chroma à choisir parmi ceux du skin, jusqu’à les avoir tous. Le chroma porté colore le cadre de la carte et teinte son illustration ; on peut en changer ou revenir à l’original à tout moment.
+- **Skin « héros de guerre »** : chaque doublon monte la carte d’un rang, de Fer à Challenger (dix rangs, le premier exemplaire est Fer). Le cadre prend le métal du rang ; à partir d’Émeraude un reflet parcourt la carte, à partir de Maître le cadre pulse, Challenger est irisé. Un skin héros de guerre monte en rang et ne débloque pas de chromas.
+- Une fois tous les chromas ou le rang Challenger atteints, et pour toutes les autres cartes, le doublon redevient de l’essence.

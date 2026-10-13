@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { buyCard, collectionState, type CollectionState, setFavorite } from "@/app/actions";
+import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { buyCard, collectionState, type CollectionState, type Owned, pickChroma, setFavorite } from "@/app/actions";
 import { type CardType, RARITIES, RARITY_LABEL, type Rarity, TYPE_LABEL } from "@/lib/card";
 import { isSecret, PRICE, SECRET_RARITIES } from "@/lib/forge";
+import { RANKS } from "@/lib/upgrades";
 import { createClient } from "@/lib/supabase/client";
 import { CardDialog } from "./CardDialog";
-import { CardFace, cardClass, cardLabel, type FaceCard } from "./CardFace";
+import { CardFace, cardClass, cardLabel, type FaceCard, type Look, lookProps } from "./CardFace";
 import { Gem, GemDefs } from "./Gem";
 
 const PAGE = 60;
@@ -22,9 +23,15 @@ const count = new Intl.NumberFormat("fr-FR");
 
 // One cell of the grid: a card the player may see, or a secret one nobody has found yet.
 type Item =
-  | { kind: "card"; key: string; rarity: Rarity; card: FaceCard; owned: boolean; found: boolean; by?: string; fav?: boolean; at?: string }
+  | ({ kind: "card"; key: string; rarity: Rarity; card: FaceCard; owned: boolean; found: boolean; by?: string } & Partial<Owned>)
   | { kind: "secret"; key: string; rarity: Rarity };
 type CardItem = Extract<Item, { kind: "card" }>;
+
+// The frame an owned card wears: its rank, or the colours of the chroma chosen.
+const lookOf = (item: CardItem): Look => ({
+  rank: item.rank,
+  colors: item.options?.find((option) => option.id === item.chroma)?.colors,
+});
 
 // `cards` holds every card below legendary. The rarer ones are secret: the page only knows
 // how many exist (`secretTotals`) until the server says which ones the group has found.
@@ -177,6 +184,26 @@ export function Catalogue({
     await refresh();
   };
 
+  // Wears a chroma, unlocking it first if a pick is left. Clicking the one worn takes it off.
+  const wear = async (item: CardItem, chromaId: number) => {
+    const unlocked = item.unlocked ?? [];
+    const next = item.chroma === chromaId ? null : chromaId;
+    const isNew = next !== null && !unlocked.includes(next);
+    setNotice(null);
+    setOpened({
+      ...item,
+      chroma: next ?? undefined,
+      unlocked: isNew ? [...unlocked, next] : unlocked,
+      picks: isNew ? (item.picks ?? 0) - 1 : item.picks,
+    });
+    const result = await pickChroma(item.card.id, next);
+    if (!result.ok) {
+      setOpened(item);
+      setNotice("Le chroma n'a pas été enregistré. Réessaie dans un instant.");
+    }
+    await refresh();
+  };
+
   // Where the opened card stands in the player's collection, and what they can do about it.
   const ownership = opened && state && !friend && (
     <div className="anvil__own">
@@ -186,6 +213,41 @@ export function Catalogue({
           <button type="button" className="forge__secondary" aria-pressed={Boolean(opened.fav)} onClick={() => favorite(opened)}>
             {opened.fav ? "★ Retirer des favoris" : "☆ Ajouter aux favoris"}
           </button>
+          {opened.rank && (
+            <p>
+              Rang <strong>{RANKS[opened.rank - 1]}</strong> ({opened.rank} sur {RANKS.length}).{" "}
+              {opened.rank < RANKS.length ? "Chaque doublon le fait monter d'un rang." : "Le plus haut rang."}
+            </p>
+          )}
+          {opened.options && (
+            <div className="chromas">
+              <p>
+                {opened.picks
+                  ? `${opened.picks} ${opened.picks > 1 ? "chromas" : "chroma"} à débloquer : choisis parmi ceux qui sont verrouillés.`
+                  : "Chromas. Chaque doublon de cette carte en débloque un, au choix."}
+              </p>
+              <ul>
+                {opened.options.map((option) => {
+                  const unlocked = opened.unlocked?.includes(option.id);
+                  return (
+                    <li key={option.id}>
+                      <button
+                        type="button"
+                        className="chromas__swatch"
+                        style={{ "--chroma-a": option.colors[0], "--chroma-b": option.colors[1] ?? option.colors[0] } as CSSProperties}
+                        aria-pressed={opened.chroma === option.id}
+                        aria-label={`${option.name}${unlocked ? "" : ", verrouillé"}`}
+                        title={option.name}
+                        data-locked={!unlocked}
+                        disabled={!unlocked && !opened.picks}
+                        onClick={() => wear(opened, option.id)}
+                      />
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
         </>
       ) : isSecret(opened.card.rarity) ? (
         <p>Découverte par {opened.by}. À trouver dans un booster ou à la forge.</p>
@@ -356,6 +418,7 @@ export function Catalogue({
                   type="button"
                   className={`${cardClass(item.card)}${item.owned ? "" : " card--missing"}${item.fav ? " card--fav" : ""}`}
                   data-rarity={item.rarity}
+                  {...lookProps(lookOf(item))}
                   aria-label={`${cardLabel(item.card)}${item.owned ? "" : ", pas encore dans ta collection"}${item.fav ? ", favori" : ""}`}
                   onClick={() => open(item)}
                 >
@@ -376,7 +439,7 @@ export function Catalogue({
       )}
       {shown.length < results.length && <div ref={sentinel} className="sentinel" aria-hidden="true" />}
 
-      <CardDialog card={opened?.card ?? null} onClose={() => setOpened(null)}>
+      <CardDialog card={opened?.card ?? null} look={opened ? lookOf(opened) : undefined} onClose={() => setOpened(null)}>
         {ownership}
       </CardDialog>
 

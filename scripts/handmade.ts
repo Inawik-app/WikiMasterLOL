@@ -243,6 +243,11 @@ export const CREATORS: Creator[] = [
 
 // Players the esports API no longer lists on a roster: remembered by hand, without a photo.
 // Only their position is stated; rarity reflects their place in the history of the scene.
+// Legends who still appear on the roster of a small league. Hand lists do not apply there
+// (a famous nickname is usually a namesake), so these are confirmed one by one: the roster card
+// with the photo takes the legend's rarity, and no second card is made.
+export const LEGENDS_STILL_PLAYING = ["Diamondprox", "Selfmade"];
+
 export const LEGENDS: { handle: string; role: string; rarity: Rarity }[] = [
   { handle: "Uzi", role: "bas", rarity: "ultimate" },
   { handle: "Deft", role: "bas", rarity: "ultimate" },

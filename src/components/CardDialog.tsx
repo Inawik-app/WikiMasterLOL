@@ -3,7 +3,7 @@
 /* eslint-disable @next/next/no-img-element -- hotlinked Riot art, see CardFace */
 import { type PointerEvent, type ReactNode, useEffect, useRef, useState } from "react";
 import { type CardType, RARITY_LABEL, TYPE_LABEL } from "@/lib/card";
-import { CardFace, cardClass, type FaceCard, isWide, thumb } from "./CardFace";
+import { CardFace, cardClass, type FaceCard, isWide, type Look, lookProps, thumb } from "./CardFace";
 import { Gem } from "./Gem";
 
 const LINK_LABEL: Partial<Record<CardType, string>> = {
@@ -58,7 +58,17 @@ function CardInfo({ card }: { card: FaceCard }) {
 
 // The card opened in large: the whole artwork with its text. `children` go under the text
 // (what the player can do with the card). Needs <GemDefs /> somewhere on the page.
-export function CardDialog({ card, onClose, children }: { card: FaceCard | null; onClose: () => void; children?: ReactNode }) {
+export function CardDialog({
+  card,
+  look,
+  onClose,
+  children,
+}: {
+  card: FaceCard | null;
+  look?: Look;
+  onClose: () => void;
+  children?: ReactNode;
+}) {
   const [artOnly, setArtOnly] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
 
@@ -93,20 +103,26 @@ export function CardDialog({ card, onClose, children }: { card: FaceCard | null;
       ref={dialog}
       className={`anvil${wide ? " anvil--wide" : ""}${artOnly ? " anvil--art-only" : ""}`}
       data-rarity={card?.rarity}
+      {...lookProps(look)}
       onClose={close}
       aria-labelledby="anvil-title"
     >
       {card && wide && (
         <>
           {/* The whole artwork, uncropped. The text sits over its right edge and can be put away. */}
-          <figure className="anvil__art" onPointerMove={tilt} onPointerLeave={rest}>
+          <figure
+              className="anvil__art"
+              style={card.splash ? { aspectRatio: "1215 / 717" } : undefined}
+              onPointerMove={tilt}
+              onPointerLeave={rest}
+            >
             <img src={thumb(card.splash ?? card.image, 1600)} alt="" />
             <span className="card__light" />
           </figure>
           <Gem rarity={card.rarity} className="anvil__gem" />
           <div className="anvil__info">
             {card.frames && (
-              <div className={`${cardClass(card)} anvil__mini`} data-rarity={card.rarity}>
+              <div className={`${cardClass(card)} anvil__mini`} data-rarity={card.rarity} {...lookProps(look)}>
                 <CardFace card={card} />
               </div>
             )}
@@ -126,7 +142,7 @@ export function CardDialog({ card, onClose, children }: { card: FaceCard | null;
       {card && !wide && (
         <>
           <div className="anvil__stage" onPointerMove={tilt} onPointerLeave={rest}>
-            <div className={cardClass(card, { large: true })} data-rarity={card.rarity}>
+            <div className={cardClass(card, { large: true })} data-rarity={card.rarity} {...lookProps(look)}>
               <CardFace card={card} large />
               <span className="card__light" />
             </div>
