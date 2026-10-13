@@ -20,6 +20,7 @@ Ouvre des boosters de cartes League of Legends et complète ta collection avant 
 | Compte | se connecter | la collection est retrouvée depuis un autre appareil |
 | Booster | ouvrir un booster sur la page « Boosters » et retourner ses cartes une à une ; une carte retournée s'ouvre en grand d'un clic | les cartes tirées apparaissent dans sa collection ; la limite d'ouverture est respectée côté serveur |
 | Source des cartes | chaque carte indique son jeu ou sa source (League of Legends, Univers de Runeterra, Legends of Runeterra, Teamfight Tactics, E-sport, Communauté) ; le catalogue se filtre par source puis par type | la source se déduit du type (`TYPE_SOURCE` dans `src/lib/card.ts`) |
+| Cartes « Invocateurs » | clin d’œil : les comptes League des joueurs du groupe sont des cartes transcendantes (icône de profil sur l’illustration de leur fond de profil ou de leur champion le plus maîtrisé) | liste tenue à la main dans `ACCOUNTS` (`scripts/handmade.ts`), à mettre à jour puis `npm run cards` |
 | Ordre des pages | Boosters en accueil (`/`), puis Collection, puis Catalogue | — |
 | Catalogue | parcourir toutes les cartes, filtrer celles que le groupe a découvertes, acheter avec l'essence | une carte secrète non trouvée reste une silhouette |
 | Collection | page à part : uniquement les cartes qu'il possède, mêmes filtres ; tri par rareté (par défaut), dernières obtenues ou ordre alphabétique ; cartes favorites (étoile, filtre) | le compteur « x sur total » est juste |

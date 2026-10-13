@@ -5,7 +5,7 @@ import { Gem } from "./Gem";
 
 export type FaceCard = Pick<
   Card,
-  "id" | "type" | "name" | "rarity" | "image" | "splash" | "subtitle" | "flavor" | "url" | "facts" | "frames" | "focus" | "icon"
+  "id" | "type" | "name" | "rarity" | "image" | "splash" | "subtitle" | "flavor" | "url" | "facts" | "frames" | "focus" | "icon" | "backdrop"
 >;
 
 // What an owned card wears on top of its rarity: a rank (ranked skins) or the two colours of a chroma.
@@ -66,7 +66,11 @@ export function CardFace({ card, locked, large }: { card: FaceCard; locked?: boo
           <Gem rarity={card.rarity} className="card__sigil" />
         ) : isIcon(card) ? (
           <>
-            <img src={src} alt="" loading="lazy" className="card__blur" />
+            {card.backdrop ? (
+              <img src={card.backdrop} alt="" loading="lazy" className="card__backdrop" />
+            ) : (
+              <img src={src} alt="" loading="lazy" className="card__blur" />
+            )}
             <img src={src} alt="" loading="lazy" className="card__icon" />
           </>
         ) : isLandscape(card) ? (

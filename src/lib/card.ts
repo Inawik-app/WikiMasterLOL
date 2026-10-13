@@ -37,7 +37,8 @@ export type CardType =
   | "lane"
   | "monster"
   | "map"
-  | "mode";
+  | "mode"
+  | "account";
 
 export type Chroma = { id: number; name: string; colors: string[] };
 
@@ -58,6 +59,8 @@ export type Card = {
   frames?: string[];
   // The image is a small icon or a logo: set in a socket instead of filling the card.
   icon?: boolean;
+  // Art shown behind an icon, instead of a blurred wash of the icon itself.
+  backdrop?: string;
   // CSS object-position for art that must be cropped.
   focus?: string;
   chromas?: Chroma[];
@@ -92,6 +95,7 @@ export const TYPE_LABEL: Record<CardType, string> = {
   player: "Joueurs",
   competition: "Compétitions",
   person: "Personnalités",
+  account: "Invocateurs",
   creator: "Créateurs",
   song: "Musiques",
   tft: "Teamfight Tactics",
@@ -140,5 +144,6 @@ export const TYPE_SOURCE: Record<CardType, Source> = {
   competition: "esport",
   song: "esport",
   person: "community",
+  account: "community",
   creator: "community",
 };
