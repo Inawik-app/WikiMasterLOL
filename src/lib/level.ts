@@ -1,9 +1,10 @@
 import { RANKS } from "./upgrades.ts";
 
 // A player's rank, from the number of cards they own. Same ten names as the ranked skins.
-// The steps widen as the collection grows: the first ranks come in days, the last in months.
-// 8,700 cards exist; Challenger is about two thirds of them.
-export const RANK_STEPS = [0, 25, 75, 200, 400, 800, 1500, 2500, 4000, 6000];
+// Every rank is the same distance from the next: 870 cards, a tenth of the 8,700 that exist.
+// Challenger starts at nine tenths of the catalogue.
+const STEP = 870;
+export const RANK_STEPS = RANKS.map((_, i) => i * STEP);
 
 export function playerRank(cards: number) {
   // 1 is Fer, 10 is Challenger: the same numbers as `data-rank` in the styles.

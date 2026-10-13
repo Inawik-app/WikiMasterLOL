@@ -96,6 +96,9 @@ export async function openBooster(): Promise<BoosterResult> {
   }
 
   const rows = data as { card: string; outcome: "new" | "essence" | "rank" | "chroma"; level: number | null }[];
+  // Kept for the weekly recap, which compares each player's draws with the odds. Not vital:
+  // if it fails, the booster is opened all the same.
+  await s.admin.from("draws").insert(drawn.map((d) => ({ user_id: s.user.id, card_id: d.id, rarity: d.rarity })));
   await celebrate(s.admin, s.user.id, rows.filter((row) => row.outcome === "new").map((row) => row.card));
   const climbed = rows.filter((row) => row.outcome === "rank" && (row.level ?? 0) >= ANNOUNCED_CARD_RANK);
   if (climbed.length && process.env.DISCORD_WEBHOOK_URL) {
@@ -415,6 +418,8 @@ export async function giveToFriend(friendId: string, cardIds: string[], essence:
   }
   const { data: names } = await s.admin.from("profiles").select("id, username").in("id", [s.user.id, friendId]);
   const name = (id: string) => names?.find((p) => p.id === id)?.username ?? "Un joueur";
+  // For the weekly recap. Not vital either.
+  await s.admin.from("gifts").insert({ from_id: s.user.id, to_id: friendId, cards: cards.length, essence: amount });
   await announceGift(name(s.user.id), name(friendId), cards.length, amount);
   return { ok: true };
 }
