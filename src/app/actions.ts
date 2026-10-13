@@ -5,6 +5,7 @@ import type { FaceCard } from "@/components/CardFace";
 import { drawBooster, ESSENCE } from "@/lib/booster";
 import type { Chroma, Rarity } from "@/lib/card";
 import { cardById, cardPool, toFaceCard, toListCard } from "@/lib/catalogue";
+import { announceDiscovery, announceGift } from "@/lib/discord";
 import { isSecret, nextSealMilestone, PRICE, sealReward, SECRET_RARITIES } from "@/lib/forge";
 import { adminClient, currentUser } from "@/lib/supabase/server";
 import { duplicateRule, isRanked } from "@/lib/upgrades";
@@ -28,6 +29,22 @@ async function session(): Promise<
   return { user, admin };
 }
 
+
+// Tells the group's Discord about the secret cards this player is the first to own.
+// Rare by nature, so the extra requests only run a few times a week.
+async function celebrate(admin: SupabaseClient, userId: string, cardIds: (string | null)[]) {
+  if (!process.env.DISCORD_WEBHOOK_URL) return;
+  const secret = cardIds.flatMap((id) => {
+    const card = id ? cardById().get(id) : undefined;
+    return card && isSecret(card.rarity) ? [card] : [];
+  });
+  if (!secret.length) return;
+  const { data: profile } = await admin.from("profiles").select("username").eq("id", userId).single();
+  for (const card of secret) {
+    const { count } = await admin.from("collection").select("*", { count: "exact", head: true }).eq("card_id", card.id);
+    if (count === 1) await announceDiscovery(profile?.username ?? "Un joueur", card);
+  }
+}
 
 // Supabase returns at most 1,000 rows per request: read page after page.
 async function readAll<Row>(page: (from: number, to: number) => PromiseLike<{ data: Row[] | null; error: unknown }>) {
@@ -82,9 +99,11 @@ export async function openBooster(): Promise<BoosterResult> {
     return { ok: false, reason: "unavailable" };
   }
 
+  const rows = data as { card: string; outcome: "new" | "essence" | "rank" | "chroma"; level: number | null }[];
+  await celebrate(s.admin, s.user.id, rows.filter((row) => row.outcome === "new").map((row) => row.card));
   return {
     ok: true,
-    cards: (data as { card: string; outcome: "new" | "essence" | "rank" | "chroma"; level: number | null }[]).map((row) => {
+    cards: rows.map((row) => {
       const card = cards.get(row.card)!;
       return {
         card: toFaceCard(card),
@@ -121,6 +140,7 @@ export async function claimSeal(): Promise<SealResult> {
     console.error("claim_seal failed:", error.code);
     return { ok: false, reason: "unavailable" };
   }
+  await celebrate(s.admin, s.user.id, [cardId]);
   return { ok: true, card: cardId ? toFaceCard(cardById().get(cardId)!) : null, essence };
 }
 
@@ -136,6 +156,7 @@ async function pay(admin: SupabaseClient, userId: string, cardId: string, rarity
     console.error("spend_essence failed:", error.code);
     return { ok: false, reason: "unavailable" };
   }
+  await celebrate(admin, userId, [cardId]);
   return { ok: true, card: toFaceCard(cardById().get(cardId)!) };
 }
 
@@ -363,6 +384,35 @@ export async function removeFriend(friendId: string): Promise<{ ok: boolean }> {
     .or(`and(user_id.eq.${s.user.id},friend_id.eq.${friendId}),and(user_id.eq.${friendId},friend_id.eq.${s.user.id})`);
   if (error) console.error("removeFriend failed:", error.code);
   return { ok: !error };
+}
+
+export type GiftResult = { ok: true } | Failure<"not-friends" | "not-enough" | "already-owned" | "not-owned" | "empty">;
+
+// Gives cards and essence to a friend. The database moves everything or nothing.
+export async function giveToFriend(friendId: string, cardIds: string[], essence: number): Promise<GiftResult> {
+  const s = await session();
+  if (s.failure) return { ok: false, reason: s.failure };
+  const cards = Array.isArray(cardIds) ? [...new Set(cardIds.filter((id) => typeof id === "string"))] : [];
+  const amount = Number.isInteger(essence) && essence > 0 ? essence : 0;
+  if (!UUID.test(friendId) || (!cards.length && !amount)) return { ok: false, reason: "empty" };
+
+  const { error } = await s.admin.rpc("give", { p_from: s.user.id, p_to: friendId, p_cards: cards, p_essence: amount });
+  if (error) {
+    for (const [message, reason] of [
+      ["not_friends", "not-friends"],
+      ["not_enough_essence", "not-enough"],
+      ["already_owned", "already-owned"],
+      ["not_owned", "not-owned"],
+    ] as const) {
+      if (error.message.includes(message)) return { ok: false, reason };
+    }
+    console.error("give failed:", error.code);
+    return { ok: false, reason: "unavailable" };
+  }
+  const { data: names } = await s.admin.from("profiles").select("id, username").in("id", [s.user.id, friendId]);
+  const name = (id: string) => names?.find((p) => p.id === id)?.username ?? "Un joueur";
+  await announceGift(name(s.user.id), name(friendId), cards.length, amount);
+  return { ok: true };
 }
 
 // --- Account -------------------------------------------------------------------

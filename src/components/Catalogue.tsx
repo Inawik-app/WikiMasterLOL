@@ -42,12 +42,15 @@ export function Catalogue({
   total,
   view = "catalogue",
   friend,
+  select,
 }: {
   cards: FaceCard[];
   secretTotals: Record<Rarity, number>;
   total: number; // every card of the game, secret ones included
   view?: "catalogue" | "collection";
   friend?: { id: string; username: string };
+  // Picking mode: a click ticks a card instead of opening it. `blocked` cards cannot be picked.
+  select?: { picked: Set<string>; blocked: Set<string>; toggle: (cardId: string) => void };
 }) {
   const mine = view === "collection";
   const [source, setSource] = useState<Source | "all">("all");
@@ -449,11 +452,13 @@ export function Catalogue({
               <li key={item.key}>
                 <button
                   type="button"
-                  className={`${cardClass(item.card)}${item.owned ? "" : " card--missing"}${item.fav ? " card--fav" : ""}`}
+                  className={`${cardClass(item.card)}${item.owned && !select?.blocked.has(item.card.id) ? "" : " card--missing"}${item.fav ? " card--fav" : ""}${select?.picked.has(item.card.id) ? " card--picked" : ""}`}
                   data-rarity={item.rarity}
                   {...lookProps(lookOf(item))}
                   aria-label={`${cardLabel(item.card)}${item.owned ? "" : ", pas encore dans ta collection"}${item.fav ? ", favori" : ""}`}
-                  onClick={() => open(item)}
+                  aria-pressed={select ? select.picked.has(item.card.id) : undefined}
+                  disabled={select?.blocked.has(item.card.id)}
+                  onClick={() => (select ? select.toggle(item.card.id) : open(item))}
                 >
                   <CardFace card={item.card} />
                 </button>

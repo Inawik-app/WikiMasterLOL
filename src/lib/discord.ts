@@ -1,0 +1,55 @@
+import { type Card, RARITY_LABEL, type Rarity } from "./card";
+
+// Server only. Announcements go to the group's Discord server through a webhook: one URL, set
+// in DISCORD_WEBHOOK_URL, and no bot to host. Without it, nothing is sent.
+// ponytail: a webhook can only post. Slash commands would need a Discord application with an
+// interactions endpoint (a route on this site), not a bot process.
+
+const COLOR: Record<Rarity, number> = {
+  common: 0x8d979c,
+  uncommon: 0x58b97e,
+  rare: 0x4b8df5,
+  epic: 0xa274f5,
+  legendary: 0xf2613c,
+  mythic: 0xf04fa9,
+  ultimate: 0xf5c44e,
+  transcendent: 0xc8f6ff,
+};
+
+type Embed = { title: string; description: string; color?: number; thumbnail?: { url: string } };
+
+// Never throws and never waits long: an announcement must not break or slow down the game.
+async function post(embed: Embed) {
+  const url = process.env.DISCORD_WEBHOOK_URL;
+  if (!url) return;
+  try {
+    await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      // No mention can ping anyone: the names come from Discord profiles.
+      body: JSON.stringify({ embeds: [embed], allowed_mentions: { parse: [] } }),
+      signal: AbortSignal.timeout(3000),
+    });
+  } catch {
+    // Discord is down or slow: the card is in the collection anyway.
+  }
+}
+
+// A player is the first of the group to find a secret card.
+export function announceDiscovery(player: string, card: Pick<Card, "name" | "rarity" | "image">) {
+  return post({
+    title: `${card.name} · ${RARITY_LABEL[card.rarity]}`,
+    description: `**${player}** vient de découvrir une carte que personne n'avait encore trouvée.`,
+    color: COLOR[card.rarity],
+    // Emblems are local files of the site: Discord could not fetch them.
+    thumbnail: card.image.startsWith("https://") ? { url: card.image } : undefined,
+  });
+}
+
+export function announceGift(from: string, to: string, cards: number, essence: number) {
+  const parts = [
+    cards > 0 && `${cards} ${cards > 1 ? "cartes" : "carte"}`,
+    essence > 0 && `${new Intl.NumberFormat("fr-FR").format(essence)} essence`,
+  ].filter(Boolean);
+  return post({ title: "Un cadeau à la forge", description: `**${from}** offre ${parts.join(" et ")} à **${to}**.` });
+}

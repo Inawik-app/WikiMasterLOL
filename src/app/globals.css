@@ -1346,6 +1346,52 @@
   .players__remove:hover {
     color: var(--color-ember);
   }
+  /* Preparing a gift: what to give, and the button that sends it. */
+  .gift {
+    display: grid;
+    justify-items: start;
+    gap: 1rem;
+    max-width: 60ch;
+    padding-bottom: 2rem;
+    font-size: 1.05rem;
+    line-height: 1.5;
+    color: var(--color-mist);
+  }
+  .gift [role="status"] {
+    color: var(--color-ivory);
+  }
+  .sort input {
+    width: 9rem;
+    min-height: 2.75rem;
+    padding: 0 0.75rem;
+    border: 1px solid var(--color-brass-dim);
+    border-radius: 2px;
+    background: var(--color-forge-900);
+    color: var(--color-ivory);
+  }
+  /* A card ticked for the gift. */
+  .card--picked {
+    outline: 3px solid var(--color-ember);
+    outline-offset: 3px;
+  }
+  .card--picked::before {
+    content: "✓";
+    position: absolute;
+    z-index: 3;
+    top: 0.35rem;
+    right: 0.45rem;
+    display: grid;
+    place-items: center;
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 50%;
+    background: var(--color-ember);
+    font-weight: 700;
+    color: var(--color-forge-950);
+  }
+  .players li {
+    flex-wrap: wrap;
+  }
   .friend-bar {
     display: flex;
     flex-wrap: wrap;
