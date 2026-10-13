@@ -922,6 +922,9 @@
     z-index: 21;
   }
   /* Cards land on the bench one after the other. */
+  .pack__slot {
+    position: relative; /* holds the favourite star on its corner */
+  }
   .pack__slot--dealt {
     animation: deal 0.55s var(--ease-forge) both;
     animation-delay: calc(var(--i) * 90ms);

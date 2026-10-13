@@ -2,7 +2,7 @@
 
 import type { User } from "@supabase/supabase-js";
 import { type CSSProperties, useCallback, useEffect, useState } from "react";
-import { claimSeal, forgeCard, openBooster, type OpenedCard, serverTime } from "@/app/actions";
+import { claimSeal, forgeCard, openBooster, type OpenedCard, serverTime, setFavorite } from "@/app/actions";
 import { boosterStock, MAX_STOCK } from "@/lib/booster";
 import { RARITIES, RARITY_LABEL, type Rarity } from "@/lib/card";
 import { essences, essenceWord, isSecret } from "@/lib/forge";
@@ -47,6 +47,7 @@ export function BoosterForge() {
   const [pack, setPack] = useState<Pack | null>(null);
   const [revealed, setRevealed] = useState(0); // how many cards on the bench are face up
   const [zoomed, setZoomed] = useState<FaceCard | null>(null); // the revealed card opened in large
+  const [favs, setFavs] = useState<Set<string>>(new Set()); // favourites among the cards on the bench
   const [clockLag, setClockLag] = useState(0); // server clock minus this device's clock
   // The light show playing for a rare card just turned over. `key` restarts it for the next one.
   const [burst, setBurst] = useState<{ rarity: Rarity; key: number } | null>(null);
@@ -128,6 +129,7 @@ export function BoosterForge() {
     const result = await action();
     if (result.ok) {
       setPack({ cards: result.cards, from });
+      setFavs(new Set(result.cards.filter((opened) => opened.fav).map((opened) => opened.card.id)));
       setRevealed(0);
     } else {
       setMessage(FAILURE[result.reason] ?? FAILURE.unavailable);
@@ -136,6 +138,31 @@ export function BoosterForge() {
     window.dispatchEvent(new Event("collection-changed")); // the rank in the header counts again
     setBusy(false);
   };
+
+  // Every card on the bench is in the collection: it can be marked as a favourite right here.
+  // Shown at once, and put back if the server refuses.
+  const toggleFav = async (cardId: string) => {
+    const flip = (set: Set<string>) => {
+      const next = new Set(set);
+      if (!next.delete(cardId)) next.add(cardId);
+      return next;
+    };
+    const fav = !favs.has(cardId);
+    setFavs(flip);
+    const result = await setFavorite(cardId, fav).catch(() => ({ ok: false }));
+    if (!result.ok) setFavs(flip);
+  };
+  const star = (card: FaceCard, className: string) => (
+    <button
+      type="button"
+      className={className}
+      aria-pressed={favs.has(card.id)}
+      aria-label={`${favs.has(card.id) ? "Retirer" : "Mettre"} ${card.name} ${favs.has(card.id) ? "des" : "en"} favoris`}
+      onClick={() => toggleFav(card.id)}
+    >
+      {className === "card__star" ? (favs.has(card.id) ? "★" : "☆") : favs.has(card.id) ? "★ Retirer des favoris" : "☆ Ajouter aux favoris"}
+    </button>
+  );
 
   const open = () => run("booster", openBooster);
   const claim = () =>
@@ -215,6 +242,7 @@ export function BoosterForge() {
                   >
                     <CardFace card={opened.card} />
                   </button>
+                  {star(opened.card, "card__star")}
                   <p className="pack__note" data-rarity={opened.card.rarity}>
                     <span>{RARITY_LABEL[opened.card.rarity]}</span>
                     {opened.isNew
@@ -273,7 +301,9 @@ export function BoosterForge() {
         </>
       )}
 
-      <CardDialog card={zoomed} onClose={() => setZoomed(null)} />
+      <CardDialog card={zoomed} onClose={() => setZoomed(null)}>
+        {zoomed && <div className="anvil__own">{star(zoomed, "forge__secondary")}</div>}
+      </CardDialog>
 
       <div className="forge__actions">
         {pack && !allRevealed && pack.cards.length > 1 && (

@@ -70,7 +70,8 @@ function randomMissing(rarity: Rarity, owned: Set<string>) {
 
 // `rank` is set when a duplicate raised the rank of a ranked skin, `chroma` when it earned a
 // chroma to pick; otherwise a duplicate gives `essence`.
-export type OpenedCard = { card: FaceCard; isNew: boolean; essence: number; rank?: number; chroma?: boolean };
+// `fav`: a duplicate of a card the player had already marked as a favourite.
+export type OpenedCard = { card: FaceCard; isNew: boolean; essence: number; rank?: number; chroma?: boolean; fav?: boolean };
 export type BoosterResult = { ok: true; cards: OpenedCard[] } | Failure<"empty">;
 
 // Opens one booster. Nothing from the browser decides the content: the cards are drawn here,
@@ -105,6 +106,13 @@ export async function openBooster(): Promise<BoosterResult> {
     const player = await usernameOf(s.admin, s.user.id);
     for (const row of climbed) await announceCardRank(player, cards.get(row.card)!, RANKS[row.level! - 1]);
   }
+  // So that the bench shows the right star on a duplicate.
+  const { data: favourites } = await s.admin
+    .from("collection")
+    .select("card_id")
+    .eq("user_id", s.user.id)
+    .eq("favorite", true)
+    .in("card_id", rows.map((row) => row.card));
   return {
     ok: true,
     cards: rows.map((row) => {
@@ -115,6 +123,7 @@ export async function openBooster(): Promise<BoosterResult> {
         essence: row.outcome === "essence" ? ESSENCE[card.rarity] : 0,
         rank: row.outcome === "rank" ? (row.level ?? undefined) : undefined,
         chroma: row.outcome === "chroma" || undefined,
+        fav: favourites?.some((f) => f.card_id === row.card) || undefined,
       };
     }),
   };
