@@ -6,7 +6,7 @@ import { drawBooster, ESSENCE } from "@/lib/booster";
 import type { Chroma, Rarity } from "@/lib/card";
 import { cardById, cardPool, toFaceCard, toListCard } from "@/lib/catalogue";
 import { announceCardRank, announceDiscovery, announceGift, announceSeal } from "@/lib/discord";
-import { isSecret, nextSealMilestone, PRICE, sealReward, SECRET_RARITIES } from "@/lib/forge";
+import { CHROMA_PRICE, isSecret, nextSealMilestone, PRICE, sealReward, SECRET_RARITIES } from "@/lib/forge";
 import { adminClient, currentUser, readAll } from "@/lib/supabase/server";
 import { duplicateRule, isRanked, RANKS } from "@/lib/upgrades";
 
@@ -313,6 +313,26 @@ export async function pickChroma(cardId: string, chromaId: number | null): Promi
   if (worn.length) return { ok: true };
   const { error: locked } = await s.admin.rpc("unlock_chroma", { p_user: s.user.id, p_card: cardId, p_chroma: chromaId });
   return { ok: !locked };
+}
+
+// Buys a chroma with essence, for a skin the player owns, and wears it.
+export async function buyChroma(cardId: string, chromaId: number): Promise<{ ok: true } | Failure<"not-enough" | "not-for-sale">> {
+  const s = await session();
+  if (s.failure) return { ok: false, reason: s.failure };
+  const card = typeof cardId === "string" ? cardById().get(cardId) : undefined;
+  // Ranked skins climb ranks instead; and the chroma must be one of this skin's.
+  if (!card || isRanked(card) || !card.chromas?.some((c) => c.id === chromaId)) return { ok: false, reason: "not-for-sale" };
+  const { error } = await s.admin.rpc("buy_chroma", {
+    p_user: s.user.id,
+    p_card: cardId,
+    p_chroma: chromaId,
+    p_price: CHROMA_PRICE[card.rarity],
+  });
+  if (!error) return { ok: true };
+  if (error.message.includes("not_enough_essence")) return { ok: false, reason: "not-enough" };
+  if (error.message.includes("no_chroma")) return { ok: false, reason: "not-for-sale" };
+  console.error("buy_chroma failed:", error.code);
+  return { ok: false, reason: "unavailable" };
 }
 
 // Marks or unmarks one of the player's own cards as a favourite.

@@ -43,3 +43,16 @@ export function sealReward(day: number): Rarity {
 const french = new Intl.NumberFormat("fr-FR");
 export const essenceWord = (amount: number) => (amount > 1 ? "essences" : "essence");
 export const essences = (amount: number) => `${french.format(amount)} ${essenceWord(amount)}`;
+
+// What a chroma costs in essence, by the rarity of its skin. A duplicate of the skin gives one
+// for free; buying is for those who do not want to wait for it.
+export const CHROMA_PRICE: Record<Rarity, number> = {
+  common: 100,
+  uncommon: 150,
+  rare: 250,
+  epic: 400,
+  legendary: 800,
+  mythic: 1500,
+  ultimate: 3000,
+  transcendent: 6000,
+};

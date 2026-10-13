@@ -1,9 +1,9 @@
 "use client";
 
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { buyCard, cardDetail, collectionState, type CollectionState, type Owned, pickChroma, setFavorite } from "@/app/actions";
+import { buyCard, buyChroma, cardDetail, collectionState, type CollectionState, type Owned, pickChroma, setFavorite } from "@/app/actions";
 import { type CardType, RARITIES, RARITY_LABEL, type Rarity, type Source, SOURCE_LABEL, SOURCES, TYPE_LABEL, TYPE_SOURCE } from "@/lib/card";
-import { essences, isSecret, PRICE, SECRET_RARITIES } from "@/lib/forge";
+import { CHROMA_PRICE, essences, isSecret, PRICE, SECRET_RARITIES } from "@/lib/forge";
 import { RANKS } from "@/lib/upgrades";
 import { createClient } from "@/lib/supabase/client";
 import { CardDialog } from "./CardDialog";
@@ -228,6 +228,22 @@ export function Catalogue({
     await refresh();
   };
 
+  // A locked chroma, with no pick left: it can be bought with essence, after a word of warning.
+  const purchaseChroma = async (item: CardItem, chromaId: number, name: string) => {
+    const price = CHROMA_PRICE[item.card.rarity];
+    if (!window.confirm(`Acheter le chroma « ${name} » pour ${essences(price)} ?`)) return;
+    setNotice(null);
+    const result = await buyChroma(item.card.id, chromaId).catch(() => ({ ok: false, reason: "unavailable" }) as const);
+    if (result.ok) {
+      setOpened((current) =>
+        current?.card.id === item.card.id ? { ...current, chroma: chromaId, unlocked: [...(current.unlocked ?? []), chromaId] } : current,
+      );
+    } else {
+      setNotice(result.reason === "not-enough" ? "Tu n'as pas assez d'essence." : "L'achat n'a pas abouti. Réessaie dans un instant.");
+    }
+    await refresh();
+  };
+
   // Where the opened card stands in the player's collection, and what they can do about it.
   const ownership = opened && state && !friend && (
     <div className="anvil__own">
@@ -248,7 +264,7 @@ export function Catalogue({
               <p>
                 {opened.picks
                   ? `${opened.picks} ${opened.picks > 1 ? "chromas" : "chroma"} à débloquer : choisis parmi ceux qui sont verrouillés.`
-                  : "Chromas. Chaque doublon de cette carte en débloque un, au choix."}
+                  : `Chromas. Chaque doublon de cette carte en débloque un, au choix ; ou achète-en un pour ${essences(CHROMA_PRICE[opened.card.rarity])} (tu en as ${count.format(state.essence)}).`}
               </p>
               <ul>
                 {opened.options.map((option) => {
@@ -260,11 +276,13 @@ export function Catalogue({
                         className="chromas__swatch"
                         style={{ "--chroma-a": option.colors[0], "--chroma-b": option.colors[1] ?? option.colors[0] } as CSSProperties}
                         aria-pressed={opened.chroma === option.id}
-                        aria-label={`${option.name}${unlocked ? "" : ", verrouillé"}`}
+                        aria-label={`${option.name}${unlocked ? "" : opened.picks ? ", à débloquer" : `, à acheter pour ${essences(CHROMA_PRICE[opened.card.rarity])}`}`}
                         title={option.name}
                         data-locked={!unlocked}
-                        disabled={!unlocked && !opened.picks}
-                        onClick={() => wear(opened, option.id)}
+                        disabled={!unlocked && !opened.picks && state.essence < CHROMA_PRICE[opened.card.rarity]}
+                        onClick={() =>
+                          unlocked || opened.picks ? wear(opened, option.id) : purchaseChroma(opened, option.id, option.name)
+                        }
                       />
                     </li>
                   );
