@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element -- hotlinked Riot art, see CardFace */
 import { type PointerEvent, type ReactNode, useEffect, useRef, useState } from "react";
-import { type CardType, RARITY_LABEL, TYPE_LABEL } from "@/lib/card";
+import { type CardType, RARITY_LABEL, SOURCE_LABEL, TYPE_LABEL, TYPE_SOURCE } from "@/lib/card";
 import { CardFace, cardClass, type FaceCard, isWide, type Look, lookProps, thumb } from "./CardFace";
 import { Gem } from "./Gem";
 
@@ -31,7 +31,10 @@ function CardInfo({ card }: { card: FaceCard }) {
       <p className="anvil__rank">
         <Gem rarity={card.rarity} />
         {RARITY_LABEL[card.rarity]}
-        <span>{TYPE_LABEL[card.type]}</span>
+        <span>
+          {/* Teamfight Tactics is both the game and the only type it has. */}
+          {card.type === "tft" ? TYPE_LABEL.tft : `${SOURCE_LABEL[TYPE_SOURCE[card.type]]} · ${TYPE_LABEL[card.type]}`}
+        </span>
       </p>
       {card.flavor && <p className="anvil__flavor">{card.flavor}</p>}
       {card.facts && (

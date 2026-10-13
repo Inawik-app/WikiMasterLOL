@@ -455,7 +455,12 @@ async function withLiveImages(cards: Card[]): Promise<Card[]> {
   const alive: Card[] = [];
   for (let i = 0; i < cards.length; i += 30) {
     const batch = cards.slice(i, i + 30);
-    const live = (url: string) => fetch(url, { method: "HEAD" }).then((r) => r.ok, () => false);
+    // A browser does not draw an SVG that is not served as one.
+    const live = (url: string) =>
+      fetch(url, { method: "HEAD" }).then(
+        (r) => r.ok && (!/\.svg(\?|$)/i.test(url) || (r.headers.get("content-type") ?? "").includes("svg")),
+        () => false,
+      );
     const ok = await Promise.all(batch.map((c) => (c.image.startsWith("/") ? true : live(c.image))));
     // A missing splash only costs the wide view: keep the card, drop the splash.
     await Promise.all(batch.map(async (c) => c.splash && !(await live(c.splash)) && delete c.splash));

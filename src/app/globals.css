@@ -286,6 +286,18 @@
     color: var(--color-forge-950);
     background: var(--color-ember);
   }
+  /* The types of the source picked: a quieter second row. */
+  .tabs--sub {
+    flex: none;
+    margin-top: 0.9rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--color-forge-700);
+  }
+  .tabs__tab--sub[aria-pressed="true"] {
+    color: var(--color-ivory);
+    background: var(--color-forge-700);
+    box-shadow: inset 0 -2px 0 var(--color-ember);
+  }
 
   .search {
     display: flex;
@@ -770,7 +782,211 @@
   }
 
   .pack {
+    position: relative;
+    z-index: 21; /* above the darkened room of a rare reveal */
     padding-top: clamp(2rem, 5vw, 3.5rem);
+  }
+  /* Cards land on the bench one after the other. */
+  .pack__slot--dealt {
+    animation: deal 0.55s var(--ease-forge) both;
+    animation-delay: calc(var(--i) * 90ms);
+  }
+  @keyframes deal {
+    from {
+      opacity: 0;
+      transform: translateY(2.5rem) rotate(calc((var(--i) - 2) * 4deg)) scale(0.9);
+    }
+  }
+  /* The rarest card turned over keeps lighting the bench. */
+  .pack__glow {
+    position: absolute;
+    inset: -4rem 0 auto;
+    height: 30rem;
+    z-index: -1;
+    background: radial-gradient(70% 60% at 50% 45%, color-mix(in oklab, var(--gem) 34%, transparent), transparent 70%);
+    animation: glow-in 1.2s var(--ease-forge) both;
+    pointer-events: none;
+  }
+  @keyframes glow-in {
+    from { opacity: 0; }
+  }
+
+  /* --- Rare reveals: one step more for each rarity ------------------------------ */
+
+  /* The card itself: it rises off the bench, more and longer as rarity climbs. */
+  .pack__slot:is([data-rarity="legendary"], [data-rarity="mythic"], [data-rarity="ultimate"], [data-rarity="transcendent"]) {
+    position: relative;
+    z-index: 2;
+  }
+  .pack__slot[data-rarity="legendary"] .card--revealed {
+    animation: forge-reveal 0.75s var(--ease-forge) both, rise 1.4s var(--ease-forge) 0.3s both;
+    --rise: 1.06;
+  }
+  .pack__slot[data-rarity="mythic"] .card--revealed {
+    animation: forge-reveal 0.9s var(--ease-forge) both, rise 2s var(--ease-forge) 0.3s both;
+    --rise: 1.1;
+  }
+  .pack__slot[data-rarity="ultimate"] .card--revealed {
+    animation: forge-reveal 1.1s var(--ease-forge) both, rise 2.8s var(--ease-forge) 0.3s both;
+    --rise: 1.16;
+  }
+  .pack__slot[data-rarity="transcendent"] .card--revealed {
+    animation: forge-reveal 1.4s var(--ease-forge) both, rise 4.6s var(--ease-forge) 0.3s both;
+    --rise: 1.28;
+  }
+  @keyframes rise {
+    25%, 70% {
+      scale: var(--rise);
+      box-shadow:
+        0 30px 40px -18px rgb(0 0 0 / 0.9),
+        0 0 60px 0 color-mix(in oklab, var(--gem) 75%, transparent);
+    }
+  }
+
+  /* The room. Two fixed layers: one behind the bench (dark, rays, rings), one in front (flash, title). */
+  .aura {
+    --life: 1.4s;
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    pointer-events: none;
+    animation: aura-life var(--life) linear both;
+  }
+  .aura--front {
+    z-index: 22;
+    background: none;
+  }
+  .aura[data-rarity="mythic"] { --life: 2s; }
+  .aura[data-rarity="ultimate"] { --life: 2.8s; }
+  .aura[data-rarity="transcendent"] { --life: 4.8s; }
+  @keyframes aura-life {
+    from, to { opacity: 0; }
+    12%, 80% { opacity: 1; }
+  }
+  /* Legendary: a warm breath of light, nothing more. */
+  .aura:not(.aura--front) {
+    background: radial-gradient(55% 45% at 50% 45%, color-mix(in oklab, var(--gem) 30%, transparent), transparent 70%);
+  }
+  /* Mythic: the room dims and rays turn behind the card. */
+  .aura:not(.aura--front):is([data-rarity="mythic"], [data-rarity="ultimate"], [data-rarity="transcendent"]) {
+    background:
+      radial-gradient(55% 45% at 50% 45%, color-mix(in oklab, var(--gem) 34%, transparent), transparent 70%),
+      rgb(2 6 7 / 0.55);
+  }
+  .aura:not(.aura--front)[data-rarity="transcendent"] {
+    background:
+      radial-gradient(60% 50% at 50% 45%, rgb(200 246 255 / 0.3), transparent 70%),
+      rgb(2 6 7 / 0.86);
+  }
+  .aura__rays {
+    /* Out of the grid: it is larger than the screen and must stay centred on it. */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    translate: -50% -50%;
+    width: 170vmax;
+    aspect-ratio: 1;
+    opacity: 0;
+    background: repeating-conic-gradient(color-mix(in oklab, var(--gem) 60%, transparent) 0 3deg, transparent 3deg 15deg);
+    mask-image: radial-gradient(circle, black 4%, transparent 55%);
+  }
+  .aura:is([data-rarity="mythic"], [data-rarity="ultimate"], [data-rarity="transcendent"]) .aura__rays {
+    opacity: 0.55;
+    animation: spin 18s linear infinite;
+  }
+  .aura[data-rarity="ultimate"] .aura__rays {
+    opacity: 0.8;
+    animation-duration: 10s;
+  }
+  /* Transcendent: every gem colour at once. */
+  .aura[data-rarity="transcendent"] .aura__rays {
+    opacity: 0.95;
+    background: repeating-conic-gradient(
+      #c8f6ff 0 3deg, transparent 3deg 10deg,
+      #f04fa9 10deg 13deg, transparent 13deg 20deg,
+      #f5c44e 20deg 23deg, transparent 23deg 30deg,
+      #58b97e 30deg 33deg, transparent 33deg 40deg,
+      #a274f5 40deg 43deg, transparent 43deg 50deg
+    );
+    mask-image: radial-gradient(circle, black 5%, transparent 68%);
+    animation-duration: 7s;
+  }
+  @keyframes spin {
+    to { rotate: 1turn; }
+  }
+  /* Ultimate and up: a shockwave leaves the card. */
+  .aura__ring {
+    grid-area: 1 / 1;
+    width: 12rem;
+    aspect-ratio: 1;
+    border: 2px solid var(--gem);
+    border-radius: 50%;
+    opacity: 0;
+  }
+  .aura:is([data-rarity="ultimate"], [data-rarity="transcendent"]) .aura__ring {
+    animation: shockwave 1.3s var(--ease-forge) 0.25s both;
+  }
+  .aura[data-rarity="transcendent"] .aura__ring {
+    border-width: 3px;
+    animation-iteration-count: 3;
+  }
+  .aura .aura__ring + .aura__ring {
+    animation-delay: 0.6s;
+  }
+  @keyframes shockwave {
+    from { opacity: 0.9; scale: 0.3; }
+    to { opacity: 0; scale: 9; }
+  }
+  /* Ultimate and up: the screen whites out for an instant. */
+  .aura__flash {
+    grid-area: 1 / 1;
+    place-self: stretch;
+    opacity: 0;
+    background: color-mix(in oklab, var(--gem) 35%, white);
+  }
+  .aura:is([data-rarity="ultimate"], [data-rarity="transcendent"]) .aura__flash {
+    animation: flash 0.9s ease-out 0.1s both;
+  }
+  .aura[data-rarity="transcendent"] .aura__flash {
+    background: white;
+    animation-duration: 1.5s;
+  }
+  @keyframes flash {
+    from { opacity: 0; }
+    18% { opacity: 0.85; }
+    to { opacity: 0; }
+  }
+  /* The name of the rarity, struck across the top of the screen. */
+  .aura__title {
+    grid-area: 1 / 1;
+    align-self: start;
+    margin-top: 12dvh;
+    max-width: 100%;
+    text-align: center;
+    opacity: 0;
+    font-family: var(--font-display);
+    font-size: clamp(2.2rem, 9vw, 6rem);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: color-mix(in oklab, var(--gem) 55%, white);
+    text-shadow: 0 0 28px var(--gem), 0 2px 6px rgb(0 0 0 / 0.9);
+  }
+  .aura:is([data-rarity="ultimate"], [data-rarity="transcendent"]) .aura__title {
+    animation: title-strike 2.2s var(--ease-forge) 0.5s both;
+  }
+  .aura[data-rarity="transcendent"] .aura__title {
+    font-size: clamp(2rem, 8.5vw, 7rem);
+    color: white;
+    text-shadow: 0 0 22px #c8f6ff, 0 0 60px #f04fa9, 0 2px 6px rgb(0 0 0 / 0.9);
+    animation-duration: 4s;
+  }
+  @keyframes title-strike {
+    from { opacity: 0; scale: 1.6; letter-spacing: 0.5em; }
+    18%, 82% { opacity: 1; scale: 1; letter-spacing: 0.12em; }
+    to { opacity: 0; scale: 1; }
   }
   .pack__cards {
     display: grid;
@@ -1581,8 +1797,19 @@
       animation: none;
     }
     .card__art::before,
-    .card[data-rank] {
+    .card[data-rank],
+    .pack__slot--dealt,
+    .aura__rays,
+    .aura__ring,
+    .aura__flash {
       animation: none !important;
+    }
+    .pack__slot .card--revealed {
+      animation: none !important;
+    }
+    /* The light and the title stay, without movement. */
+    .aura__title {
+      animation-name: aura-life !important;
     }
     .card--large {
       transform: none;

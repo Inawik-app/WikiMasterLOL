@@ -354,3 +354,9 @@ export async function deleteAccount(): Promise<{ ok: true } | { ok: false; reaso
   if (error) console.error("deleteAccount failed:", error.code);
   return error ? { ok: false, reason: "unavailable" } : { ok: true };
 }
+
+// The server's clock. The booster stock is counted from it, not from the player's device:
+// a device a few seconds late showed one booster fewer right after opening one.
+export async function serverTime() {
+  return Date.now();
+}

@@ -2,7 +2,7 @@
 
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { buyCard, collectionState, type CollectionState, type Owned, pickChroma, setFavorite } from "@/app/actions";
-import { type CardType, RARITIES, RARITY_LABEL, type Rarity, TYPE_LABEL } from "@/lib/card";
+import { type CardType, RARITIES, RARITY_LABEL, type Rarity, type Source, SOURCE_LABEL, SOURCES, TYPE_LABEL, TYPE_SOURCE } from "@/lib/card";
 import { isSecret, PRICE, SECRET_RARITIES } from "@/lib/forge";
 import { RANKS } from "@/lib/upgrades";
 import { createClient } from "@/lib/supabase/client";
@@ -48,6 +48,7 @@ export function Catalogue({
   friend?: { id: string; username: string };
 }) {
   const mine = view === "collection";
+  const [source, setSource] = useState<Source | "all">("all");
   const [type, setType] = useState<CardType | "all">("all");
   const [rarity, setRarity] = useState<Rarity | null>(null);
   const [query, setQuery] = useState("");
@@ -114,11 +115,13 @@ export function Catalogue({
   const beforeRarity = useMemo(() => {
     const q = fold(query.trim());
     return items.filter((it) => {
-      if (it.kind === "secret") return type === "all" && !q && !mine && !foundOnly; // a silhouette has no type and no name
+      // A silhouette has no source, no type and no name.
+      if (it.kind === "secret") return source === "all" && type === "all" && !q && !mine && !foundOnly;
+      if (source !== "all" && TYPE_SOURCE[it.card.type] !== source) return false;
       if (mine ? !it.owned || (favOnly && !it.fav) : foundOnly && !it.found) return false;
       return (type === "all" || it.card.type === type) && (!q || searchIndex.get(it.key)!.includes(q));
     });
-  }, [items, searchIndex, type, query, mine, foundOnly, favOnly]);
+  }, [items, searchIndex, source, type, query, mine, foundOnly, favOnly]);
 
   const rarityCount = useMemo(() => {
     const counts = Object.fromEntries(RARITIES.map((r) => [r, 0])) as Record<Rarity, number>;
@@ -127,6 +130,9 @@ export function Catalogue({
   }, [beforeRarity]);
 
   // `items` come rarest first. The other orders only exist in a collection, where every item is a card.
+  // The types of the source picked: a second row of tabs, only when there is something to choose.
+  const sourceTypes = source === "all" ? [] : TYPES.filter((t) => TYPE_SOURCE[t] === source);
+
   const results = useMemo(() => {
     const list = rarity ? beforeRarity.filter((it) => it.rarity === rarity) : beforeRarity;
     if (sort === "rarity") return list;
@@ -302,19 +308,20 @@ export function Catalogue({
         </div>
 
         <div className="bench">
-          <div className="tabs" role="group" aria-label="Type de carte">
-            {(["all", ...TYPES] as const).map((t) => (
+          <div className="tabs" role="group" aria-label="Jeu ou source">
+            {(["all", ...SOURCES] as const).map((s) => (
               <button
-                key={t}
+                key={s}
                 type="button"
                 className="tabs__tab"
-                aria-pressed={type === t}
+                aria-pressed={source === s}
                 onClick={() => {
-                  setType(t);
+                  setSource(s);
+                  setType("all");
                   setLimit(PAGE);
                 }}
               >
-                {t === "all" ? "Tout" : TYPE_LABEL[t]}
+                {s === "all" ? "Tout" : SOURCE_LABEL[s]}
               </button>
             ))}
           </div>
@@ -336,6 +343,25 @@ export function Catalogue({
             />
           </label>
         </div>
+
+        {sourceTypes.length > 1 && (
+          <div className="tabs tabs--sub" role="group" aria-label="Type de carte">
+            {(["all", ...sourceTypes] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                className="tabs__tab tabs__tab--sub"
+                aria-pressed={type === t}
+                onClick={() => {
+                  setType(t);
+                  setLimit(PAGE);
+                }}
+              >
+                {t === "all" ? `Tout ${SOURCE_LABEL[source as Source]}` : TYPE_LABEL[t]}
+              </button>
+            ))}
+          </div>
+        )}
       </section>
 
       <div className="tally">
