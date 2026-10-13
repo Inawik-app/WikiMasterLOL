@@ -89,7 +89,13 @@ export function CardFace({ card, locked, large }: { card: FaceCard; locked?: boo
           <img src={src} alt="" loading="lazy" className="card__full" />
         )}
       </span>
-      {!locked && <span className="card__plate">{card.name}</span>}
+      {!locked && (
+        <span className="card__plate">
+          {/* An ability says whose it is: its name alone does not. */}
+          {card.type === "ability" && card.subtitle && <small className="card__owner">{card.subtitle.split(" · ")[0]}</small>}
+          {card.name}
+        </span>
+      )}
       <Gem rarity={card.rarity} className="card__gem" />
     </>
   );

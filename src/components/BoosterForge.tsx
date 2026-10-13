@@ -320,8 +320,13 @@ export function BoosterForge() {
         <div className="seal__head">
           <h2 id="shop-title">Forger avec l&apos;essence</h2>
           <p>
-            Une carte au hasard dans la rareté choisie, toujours une que tu n&apos;as pas. Les cartes moins rares
-            s&apos;achètent une à une depuis le catalogue.
+            L&apos;essence vient des doublons : une carte que tu possèdes déjà t&apos;en rend un peu, d&apos;autant plus
+            qu&apos;elle est rare. Deux exceptions : le doublon d&apos;un skin à chromas te donne un chroma à choisir, et
+            celui d&apos;un skin « héros de guerre » fait monter son rang.
+          </p>
+          <p>
+            Ici, l&apos;essence forge une carte au hasard dans la rareté choisie, toujours une que tu n&apos;as pas. Les
+            cartes moins rares s&apos;achètent une à une depuis le catalogue.
           </p>
         </div>
         <ul className="shop__list">
