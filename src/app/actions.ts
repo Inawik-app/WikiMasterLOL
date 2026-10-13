@@ -5,10 +5,10 @@ import type { FaceCard } from "@/components/CardFace";
 import { drawBooster, ESSENCE } from "@/lib/booster";
 import type { Chroma, Rarity } from "@/lib/card";
 import { cardById, cardPool, toFaceCard, toListCard } from "@/lib/catalogue";
-import { announceDiscovery, announceGift } from "@/lib/discord";
+import { announceCardRank, announceDiscovery, announceGift, announceSeal } from "@/lib/discord";
 import { isSecret, nextSealMilestone, PRICE, sealReward, SECRET_RARITIES } from "@/lib/forge";
-import { adminClient, currentUser } from "@/lib/supabase/server";
-import { duplicateRule, isRanked } from "@/lib/upgrades";
+import { adminClient, currentUser, readAll } from "@/lib/supabase/server";
+import { duplicateRule, isRanked, RANKS } from "@/lib/upgrades";
 
 // Every action follows the same pattern: find out who is asking, decide here on the server,
 // then let one database function record the result in a single transaction.
@@ -30,6 +30,13 @@ async function session(): Promise<
 }
 
 
+const ANNOUNCED_CARD_RANK = 7; // Diamant: from there, a ranked skin climbing is worth telling
+
+async function usernameOf(admin: SupabaseClient, userId: string) {
+  const { data } = await admin.from("profiles").select("username").eq("id", userId).single();
+  return (data?.username as string | undefined) ?? "Un joueur";
+}
+
 // Tells the group's Discord about the secret cards this player is the first to own.
 // Rare by nature, so the extra requests only run a few times a week.
 async function celebrate(admin: SupabaseClient, userId: string, cardIds: (string | null)[]) {
@@ -43,17 +50,6 @@ async function celebrate(admin: SupabaseClient, userId: string, cardIds: (string
   for (const card of secret) {
     const { count } = await admin.from("collection").select("*", { count: "exact", head: true }).eq("card_id", card.id);
     if (count === 1) await announceDiscovery(profile?.username ?? "Un joueur", card);
-  }
-}
-
-// Supabase returns at most 1,000 rows per request: read page after page.
-async function readAll<Row>(page: (from: number, to: number) => PromiseLike<{ data: Row[] | null; error: unknown }>) {
-  const rows: Row[] = [];
-  for (let from = 0; ; from += 1000) {
-    const { data, error } = await page(from, from + 999);
-    if (error || !data) throw new Error("could not read the collection");
-    rows.push(...data);
-    if (data.length < 1000) return rows;
   }
 }
 
@@ -101,6 +97,11 @@ export async function openBooster(): Promise<BoosterResult> {
 
   const rows = data as { card: string; outcome: "new" | "essence" | "rank" | "chroma"; level: number | null }[];
   await celebrate(s.admin, s.user.id, rows.filter((row) => row.outcome === "new").map((row) => row.card));
+  const climbed = rows.filter((row) => row.outcome === "rank" && (row.level ?? 0) >= ANNOUNCED_CARD_RANK);
+  if (climbed.length && process.env.DISCORD_WEBHOOK_URL) {
+    const player = await usernameOf(s.admin, s.user.id);
+    for (const row of climbed) await announceCardRank(player, cards.get(row.card)!, RANKS[row.level! - 1]);
+  }
   return {
     ok: true,
     cards: rows.map((row) => {
@@ -141,6 +142,9 @@ export async function claimSeal(): Promise<SealResult> {
     return { ok: false, reason: "unavailable" };
   }
   await celebrate(s.admin, s.user.id, [cardId]);
+  if (process.env.DISCORD_WEBHOOK_URL) {
+    await announceSeal(await usernameOf(s.admin, s.user.id), day, cardId ? cardById().get(cardId)! : null);
+  }
   return { ok: true, card: cardId ? toFaceCard(cardById().get(cardId)!) : null, essence };
 }
 

@@ -16,7 +16,13 @@ const COLOR: Record<Rarity, number> = {
   transcendent: 0xc8f6ff,
 };
 
-type Embed = { title: string; description: string; color?: number; thumbnail?: { url: string } };
+type Embed = {
+  title: string;
+  description?: string;
+  color?: number;
+  thumbnail?: { url: string };
+  fields?: { name: string; value: string }[];
+};
 
 // Never throws and never waits long: an announcement must not break or slow down the game.
 async function post(embed: Embed) {
@@ -52,4 +58,30 @@ export function announceGift(from: string, to: string, cards: number, essence: n
     essence > 0 && `${new Intl.NumberFormat("fr-FR").format(essence)} essence`,
   ].filter(Boolean);
   return post({ title: "Un cadeau à la forge", description: `**${from}** offre ${parts.join(" et ")} à **${to}**.` });
+}
+
+// A player collects a reward of the forge seal (days 14, 21 and 28 of each cycle).
+export function announceSeal(player: string, day: number, card: Pick<Card, "name" | "rarity" | "image"> | null) {
+  return post({
+    title: `Sceau de forge · jour ${day}`,
+    description: card
+      ? `**${player}** a tenu ${day} jours et repart avec **${card.name}** (${RARITY_LABEL[card.rarity]}).`
+      : `**${player}** a tenu ${day} jours. Il avait déjà toutes les cartes de ce palier : le sceau l'a payé en essence.`,
+    color: card ? COLOR[card.rarity] : undefined,
+    thumbnail: card?.image.startsWith("https://") ? { url: card.image } : undefined,
+  });
+}
+
+// A ranked skin reaches Diamant or higher.
+export function announceCardRank(player: string, card: Pick<Card, "name" | "image">, rank: string) {
+  return post({
+    title: `${card.name} · rang ${rank}`,
+    description: `**${player}** a monté cette carte au rang **${rank}**.`,
+    color: 0x7fb0ff,
+    thumbnail: card.image.startsWith("https://") ? { url: card.image } : undefined,
+  });
+}
+
+export function postRecap(recap: { title: string; sections: { name: string; value: string }[] }) {
+  return post({ title: recap.title, color: 0xc8a45c, fields: recap.sections });
 }

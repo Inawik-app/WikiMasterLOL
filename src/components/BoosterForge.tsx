@@ -133,6 +133,7 @@ export function BoosterForge() {
       setMessage(FAILURE[result.reason] ?? FAILURE.unavailable);
     }
     await loadProfile();
+    window.dispatchEvent(new Event("collection-changed")); // the rank in the header counts again
     setBusy(false);
   };
 

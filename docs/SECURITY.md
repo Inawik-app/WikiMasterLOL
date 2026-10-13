@@ -46,6 +46,8 @@ Seules entrées utilisateur : le pseudo (longueur et caractères validés côté
 
 Les dons permettent de vider un compte dans un autre : avec une inscription ouverte, quelqu'un peut créer des comptes jetables pour leurs huit boosters de départ et tout donner à son compte principal. Accepté pour un groupe d'amis ; à fermer (liste d'invités, ou don réservé aux comptes anciens) si le jeu s'ouvre.
 
+`/api/recap` n'est pas une page : elle refuse tout appel sans `CRON_SECRET`, que seul Vercel Cron envoie.
+
 `DISCORD_WEBHOOK_URL` est un secret : qui l'a peut écrire dans le salon. Côté serveur uniquement.
 
 Chaque Server Action passe par `session()`, qui compte l’appel en base : 120 actions par minute et par joueur, au-delà l’action est refusée. Politique de sécurité de contenu complète en production (`next.config.ts`), avec `unsafe-inline` pour les scripts faute de nonce.
