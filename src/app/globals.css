@@ -374,6 +374,33 @@
     background: var(--color-forge-900);
     color: var(--color-ivory);
   }
+  /* The star that marks a favourite, on the corner of the player's own cards. Discreet until
+     it is on. */
+  .grid-cards li {
+    position: relative;
+  }
+  .card__star {
+    position: absolute;
+    z-index: 3;
+    top: 0.1rem;
+    left: 0.1rem;
+    display: grid;
+    place-items: center;
+    width: 2.2rem;
+    height: 2.2rem;
+    font-size: 1.2rem;
+    line-height: 1;
+    color: rgb(255 255 255 / 0.55);
+    text-shadow: 0 1px 3px rgb(0 0 0 / 0.9);
+    transition: color 0.2s, scale 0.3s var(--ease-forge);
+  }
+  .card__star:hover {
+    color: white;
+    scale: 1.2;
+  }
+  .card__star[aria-pressed="true"] {
+    color: var(--color-ember);
+  }
   /* A favourite carries an ember star on its corner. */
   .card--fav::after {
     content: "★";
@@ -1309,6 +1336,63 @@
     min-height: 2.75rem;
   }
 
+  /* --- The player's rank: a crest that gains a piece at each rank ------------------ */
+
+  .rank {
+    flex: none;
+    width: 2.5rem;
+    overflow: visible;
+  }
+  .rank__plate {
+    fill: color-mix(in oklab, var(--frame) 28%, #0b1416);
+    stroke: var(--frame);
+    stroke-width: 1.6;
+    stroke-linejoin: round;
+  }
+  .rank__line {
+    fill: none;
+    stroke: color-mix(in oklab, var(--frame) 65%, white);
+    stroke-width: 1;
+  }
+  .rank__metal {
+    fill: var(--frame);
+  }
+  .rank__gem {
+    fill: color-mix(in oklab, var(--frame) 55%, white);
+  }
+  /* From Émeraude up the crest glows; from Maître up it breathes. */
+  .rank:is([data-rank="6"], [data-rank="7"]) {
+    filter: drop-shadow(0 0 4px var(--frame));
+  }
+  .rank:is([data-rank="8"], [data-rank="9"], [data-rank="10"]) {
+    animation: crest-breathe 3.2s ease-in-out infinite;
+  }
+  @keyframes crest-breathe {
+    from, to { filter: drop-shadow(0 0 3px var(--frame)); }
+    50% { filter: drop-shadow(0 0 9px var(--frame)); }
+  }
+  /* Challenger: the metal runs through every colour. */
+  .rank[data-rank="10"] {
+    animation: crest-prism 6s linear infinite;
+  }
+  @keyframes crest-prism {
+    from { filter: drop-shadow(0 0 7px var(--frame)) hue-rotate(0deg); }
+    to { filter: drop-shadow(0 0 7px var(--frame)) hue-rotate(360deg); }
+  }
+  .user__rank {
+    display: grid;
+    justify-items: center;
+    gap: 0.15rem;
+  }
+  /* How far along to the next rank. */
+  .user__xp {
+    width: 2.5rem;
+    height: 3px;
+    border-radius: 2px;
+    background: linear-gradient(var(--color-hextech), var(--color-hextech)) 0 0 / calc(var(--progress) * 100%) 100% no-repeat,
+      var(--color-forge-700);
+  }
+
   /* --- Friends ------------------------------------------------------------ */
 
   .players {
@@ -1763,9 +1847,12 @@
     .user__name {
       display: none;
     }
-    .user__avatar {
-      width: 2rem;
-      height: 2rem;
+    .user__rank + .user__avatar {
+      display: none;
+    }
+    .rank,
+    .user__xp {
+      width: 2.1rem;
     }
     /* Days 21 and 28 sit too close for two lines of text each: the gem alone says the rarity. */
     .seal__track {
@@ -1866,6 +1953,7 @@
       animation: none;
     }
     .card__art::before,
+    .rank,
     .card[data-rank],
     .pack__slot--dealt,
     .aura__rays,

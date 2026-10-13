@@ -30,3 +30,14 @@ export function adminClient() {
   if (!url || !key) return null;
   return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 }
+
+// Supabase returns at most 1,000 rows per request: read page after page.
+export async function readAll<Row>(page: (from: number, to: number) => PromiseLike<{ data: Row[] | null; error: unknown }>) {
+  const rows: Row[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await page(from, from + 999);
+    if (error || !data) throw new Error("could not read the table");
+    rows.push(...data);
+    if (data.length < 1000) return rows;
+  }
+}

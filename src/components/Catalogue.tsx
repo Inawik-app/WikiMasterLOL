@@ -178,6 +178,7 @@ export function Catalogue({
     const result = await buyCard(item.card.id);
     if (result.ok) {
       setOpened({ ...item, owned: true });
+      window.dispatchEvent(new Event("collection-changed"));
     } else {
       setNotice(
         result.reason === "not-enough"
@@ -194,11 +195,18 @@ export function Catalogue({
 
   // Shown at once; the server is told in the background, and the collection read again.
   const favorite = async (item: CardItem) => {
-    setOpened({ ...item, fav: !item.fav });
-    const result = await setFavorite(item.card.id, !item.fav);
-    if (!result.ok) setNotice("Le favori n'a pas été enregistré. Réessaie dans un instant.");
-    await refresh();
+    const fav = !item.fav;
+    const id = item.card.id;
+    setState((s) => s && { ...s, owned: s.owned.map((o) => (o.id === id ? { ...o, fav } : o)) });
+    setOpened((current) => (current?.card.id === id ? { ...current, fav } : current));
+    const result = await setFavorite(id, fav);
+    if (!result.ok) {
+      setNotice("Le favori n'a pas été enregistré. Réessaie dans un instant.");
+      await refresh();
+    }
   };
+  // The star on the corner of a card: on the player's own cards, outside picking mode.
+  const canStar = Boolean(state) && !friend && !select;
 
   // Wears a chroma, unlocking it first if a pick is left. Clicking the one worn takes it off.
   const wear = async (item: CardItem, chromaId: number) => {
@@ -452,7 +460,7 @@ export function Catalogue({
               <li key={item.key}>
                 <button
                   type="button"
-                  className={`${cardClass(item.card)}${item.owned && !select?.blocked.has(item.card.id) ? "" : " card--missing"}${item.fav ? " card--fav" : ""}${select?.picked.has(item.card.id) ? " card--picked" : ""}`}
+                  className={`${cardClass(item.card)}${item.owned && !select?.blocked.has(item.card.id) ? "" : " card--missing"}${item.fav && !canStar ? " card--fav" : ""}${select?.picked.has(item.card.id) ? " card--picked" : ""}`}
                   data-rarity={item.rarity}
                   {...lookProps(lookOf(item))}
                   aria-label={`${cardLabel(item.card)}${item.owned ? "" : ", pas encore dans ta collection"}${item.fav ? ", favori" : ""}`}
@@ -462,6 +470,17 @@ export function Catalogue({
                 >
                   <CardFace card={item.card} />
                 </button>
+                {canStar && item.owned && (
+                  <button
+                    type="button"
+                    className="card__star"
+                    aria-pressed={Boolean(item.fav)}
+                    aria-label={`${item.fav ? "Retirer" : "Mettre"} ${item.card.name} ${item.fav ? "des" : "en"} favoris`}
+                    onClick={() => favorite(item)}
+                  >
+                    {item.fav ? "★" : "☆"}
+                  </button>
+                )}
               </li>
             ),
           )}

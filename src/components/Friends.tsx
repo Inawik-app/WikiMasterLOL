@@ -15,12 +15,14 @@ import type { Rarity } from "@/lib/card";
 import { createClient } from "@/lib/supabase/client";
 import type { FaceCard } from "./CardFace";
 import { Catalogue } from "./Catalogue";
+import { RankBadge } from "./RankBadge";
 
 const count = new Intl.NumberFormat("fr-FR");
 
-function Who({ player, detail }: { player: Player; detail?: string }) {
+function Who({ player, detail, cards }: { player: Player; detail?: string; cards?: number }) {
   return (
     <>
+      {cards !== undefined && <RankBadge cards={cards} />}
       {player.avatar && <img src={player.avatar} alt="" width={36} height={36} loading="lazy" className="user__avatar" />}
       <p className="players__name">
         {player.username}
@@ -93,6 +95,7 @@ export function Friends(props: { cards: FaceCard[]; secretTotals: Record<Rarity,
       setPicked(new Set());
       setEssence("");
       setRound(round + 1);
+      window.dispatchEvent(new Event("collection-changed"));
     } else {
       setGiftNote(
         {
@@ -179,7 +182,7 @@ export function Friends(props: { cards: FaceCard[]; secretTotals: Record<Rarity,
         <ul className="players">
           {state.friends.map((friend) => (
             <li key={friend.id}>
-              <Who player={friend} detail={`${count.format(friend.cards)} ${friend.cards > 1 ? "cartes" : "carte"}`} />
+              <Who player={friend} cards={friend.cards} detail={`${count.format(friend.cards)} ${friend.cards > 1 ? "cartes" : "carte"}`} />
               <button type="button" className="forge__secondary" onClick={() => setViewing(friend)}>
                 Voir la collection
               </button>
