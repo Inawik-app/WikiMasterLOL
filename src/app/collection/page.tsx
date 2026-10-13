@@ -8,8 +8,8 @@ export const metadata: Metadata = { title: "Collection" };
 export default function Collection() {
   return (
     <main className="forge">
+      <SiteHeader current="collection" />
       <header className="masthead">
-        <SiteHeader current="collection" />
         <h1>Ta collection</h1>
         <p className="masthead__lede">Les cartes que tu as sorties de la forge, les plus rares en premier.</p>
       </header>

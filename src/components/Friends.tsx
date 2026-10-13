@@ -1,7 +1,7 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element -- Discord avatars, hotlinked like the card art */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import {
   addFriend,
   collectionState,
@@ -57,6 +57,10 @@ export function Friends(props: { cards: FaceCard[]; secretTotals: Record<Rarity,
     });
     return () => data.subscription.unsubscribe();
   }, [supabase, refresh]);
+
+  // Next keeps a page alive when the player goes to another one. Coming back to the friends
+  // page should show the list, not a gift left half way: it is put away when the page hides.
+  useLayoutEffect(() => () => setGiving(null), []);
 
   if (state === undefined && supabase) return null;
   if (!state) return <p className="empty">Connecte-toi avec Discord, en haut de la page, pour retrouver tes amis.</p>;

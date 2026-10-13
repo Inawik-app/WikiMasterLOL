@@ -11,8 +11,8 @@ export default function Legal() {
   const mail = contact ? <a href={`mailto:${contact}`}>{contact}</a> : "l'adresse de contact indiquée par la personne qui t'a invité";
   return (
     <main className="forge">
+      <SiteHeader />
       <header className="masthead">
-        <SiteHeader />
         <h1>Mentions légales</h1>
         <p className="masthead__lede">Qui tient ce site, ce qu&apos;il sait de toi, et comment tout effacer.</p>
       </header>

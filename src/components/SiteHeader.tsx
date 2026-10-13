@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { UserMenu } from "./UserMenu";
 
@@ -15,7 +17,13 @@ export function SiteHeader({ current }: { current?: (typeof PAGES)[number][0] })
       <p className="masthead__mark">WikiMaster LoL</p>
       <nav className="sitenav" aria-label="Navigation principale">
         {PAGES.map(([page, href, label]) => (
-          <Link key={page} href={href} aria-current={current === page ? "page" : undefined}>
+          <Link
+            key={page}
+            href={href}
+            aria-current={current === page ? "page" : undefined}
+            // The bar follows the scroll: the link of the page already open takes back to its top.
+            onClick={() => current === page && window.scrollTo({ top: 0, behavior: "smooth" })}
+          >
             {label}
           </Link>
         ))}

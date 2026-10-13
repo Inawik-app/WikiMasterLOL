@@ -86,8 +86,8 @@ export async function weeklyRecap(admin: SupabaseClient, now = new Date()): Prom
   const table = [...players]
     .sort((a, b) => b.total - a.total)
     .map((p) => {
-      const { rank, name } = playerRank(p.total);
-      return `${RANK_EMOJI[rank - 1]} **${p.name}** · ${name} · ${plural(p.total, "carte", "cartes")}${p.gained ? ` (+${count.format(p.gained)})` : ""}`;
+      const { rank, label } = playerRank(p.total);
+      return `${RANK_EMOJI[rank - 1]} **${p.name}** · ${label} · ${plural(p.total, "carte", "cartes")}${p.gained ? ` (+${count.format(p.gained)})` : ""}`;
     });
   const found = discoveries
     .flatMap((d) => {
