@@ -331,9 +331,9 @@ export const STARS = ["Rekkles", "Bdd", "Kiin", "Peyz", "Lehends", "Hans Sama", 
 // the profile background chosen in the client when known, else the champion with the most
 // mastery. Read by hand from the public profiles on 2026-10-13; update here when they change.
 export const ACCOUNTS: { riotId: string; icon: number; art: string; main: string }[] = [
-  { riotId: "Azoth999#AZOTH", icon: 5534, art: "HEARTSTEEL Aphelios", main: "Maître Yi" },
-  { riotId: "Amplix#EUW", icon: 6760, art: "Alistar", main: "Alistar" },
-  { riotId: "Splatox#EUW", icon: 4380, art: "Fiora", main: "Fiora" },
+  { riotId: "Azoth999#AZOTH", icon: 5534, art: "Maître Yi fleur spirituelle prestige", main: "Maître Yi" },
+  { riotId: "Amplix#EUW", icon: 6760, art: "Braum cocktails", main: "Alistar" },
+  { riotId: "Splatox#EUW", icon: 4380, art: "iG Fiora", main: "Fiora" },
   { riotId: "FigueUniforme#help", icon: 5488, art: "Nami", main: "Nami" },
-  { riotId: "IXKIXKIXI#IXIKI", icon: 29, art: "Akali", main: "Akali" },
+  { riotId: "IXKIXKIXI#IXIKI", icon: 29, art: "LeBlanc", main: "Akali" },
 ];

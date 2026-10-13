@@ -454,7 +454,7 @@ async function withModeArt(list: Handmade[]): Promise<Handmade[]> {
 function accountCards(cards: Card[]): Card[] {
   return ACCOUNTS.map((account) => {
     const [name, tag] = account.riotId.split("#");
-    const art = cards.find((c) => (c.type === "champion" || c.type === "skin") && c.name === account.art);
+    const art = cards.find((c) => (c.type === "champion" || c.type === "skin") && c.name.trim() === account.art);
     if (!art) throw new Error(`no champion or skin card named ${account.art}`);
     return {
       id: `account:${account.riotId.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
@@ -819,7 +819,7 @@ async function build(): Promise<Card[]> {
 
   // Source texts carry HTML tags and entities ("&nbsp;"): clean every text in one place.
   for (const card of cards) {
-    card.name = decodeEntities(card.name);
+    card.name = decodeEntities(card.name).trim();
     if (card.subtitle) card.subtitle = decodeEntities(card.subtitle);
     if (card.flavor) card.flavor = decodeEntities(stripHtml(card.flavor) ?? "") || undefined;
   }
