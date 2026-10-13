@@ -1,7 +1,7 @@
 "use client";
 
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { buyCard, collectionState, type CollectionState, type Owned, pickChroma, setFavorite } from "@/app/actions";
+import { buyCard, cardDetail, collectionState, type CollectionState, type Owned, pickChroma, setFavorite } from "@/app/actions";
 import { type CardType, RARITIES, RARITY_LABEL, type Rarity, type Source, SOURCE_LABEL, SOURCES, TYPE_LABEL, TYPE_SOURCE } from "@/lib/card";
 import { isSecret, PRICE, SECRET_RARITIES } from "@/lib/forge";
 import { RANKS } from "@/lib/upgrades";
@@ -39,11 +39,13 @@ const lookOf = (item: CardItem): Look => ({
 export function Catalogue({
   cards,
   secretTotals,
+  total,
   view = "catalogue",
   friend,
 }: {
   cards: FaceCard[];
   secretTotals: Record<Rarity, number>;
+  total: number; // every card of the game, secret ones included
   view?: "catalogue" | "collection";
   friend?: { id: string; username: string };
 }) {
@@ -67,7 +69,7 @@ export function Catalogue({
 
   // If the collection cannot be read, the page stays a plain catalogue.
   const friendId = friend?.id;
-  const refresh = useCallback(async () => setState(await collectionState(friendId).catch(() => null)), [friendId]);
+  const refresh = useCallback(async () => setState(await collectionState(friendId, mine).catch(() => null)), [friendId, mine]);
   useEffect(() => {
     if (!supabase) return;
     // Read the collection again whenever the player signs in or out.
@@ -91,7 +93,8 @@ export function Catalogue({
       for (let i = found[r] ?? 0; i < secretTotals[r]; i++) list.push({ kind: "secret", key: `${r}-${i}`, rarity: r });
     }
     // Signed out, nothing is "missing": the page is a plain catalogue.
-    for (const card of cards) {
+    // A collection page has no catalogue of its own: its cards come with the state.
+    for (const card of mine ? (state?.cards ?? []) : cards) {
       list.push({
         kind: "card",
         key: card.id,
@@ -104,7 +107,7 @@ export function Catalogue({
     }
     // Rarest first; within a rarity, found cards come before the silhouettes.
     return list.sort((a, b) => RARITIES.indexOf(b.rarity) - RARITIES.indexOf(a.rarity));
-  }, [cards, secretTotals, state]);
+  }, [cards, secretTotals, state, mine]);
 
   const searchIndex = useMemo(
     () => new Map(items.map((it) => [it.key, it.kind === "card" ? fold(`${it.card.name} ${it.card.subtitle ?? ""}`) : ""])),
@@ -142,7 +145,6 @@ export function Catalogue({
       : cardsOnly.sort((a, b) => (b.at ?? "").localeCompare(a.at ?? ""));
   }, [beforeRarity, rarity, sort]);
   const shown = results.slice(0, limit);
-  const total = cards.length + SECRET_RARITIES.reduce((n, r) => n + secretTotals[r], 0);
 
   // Load the next page when the end of the grid comes near. Re-created after each page
   // so it fires again if the sentinel is still in view.
@@ -160,6 +162,11 @@ export function Catalogue({
   const open = (item: CardItem) => {
     setOpened(item);
     setNotice(null);
+    // Lists carry light cards: the texts arrive a moment after the card opens.
+    cardDetail(item.card.id).then(
+      (card) => card && setOpened((current) => (current?.card.id === card.id ? { ...current, card } : current)),
+      () => {},
+    );
   };
 
   const buy = async (item: CardItem) => {
