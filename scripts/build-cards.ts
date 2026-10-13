@@ -782,13 +782,73 @@ async function build(): Promise<Card[]> {
     if (card.subtitle) card.subtitle = decodeEntities(card.subtitle);
     if (card.flavor) card.flavor = decodeEntities(stripHtml(card.flavor) ?? "") || undefined;
   }
-  return cards;
+  return distinctNames(cards);
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
+
+// What is added to a name shared by several cards. The order is also the priority: in a group
+// of namesakes, the card whose type comes first keeps the bare name ("Annie" stays the champion).
+const NAME_TAG: Record<CardType, string> = {
+  champion: "Champion",
+  skin: "Skin",
+  region: "Région",
+  item: "Objet",
+  rune: "Rune",
+  summoner: "Sort d'invocateur",
+  ability: "Compétence",
+  monster: "Monstre",
+  map: "Carte de jeu",
+  mode: "Mode de jeu",
+  lane: "Voie",
+  server: "Serveur",
+  team: "Équipe",
+  player: "Joueur",
+  competition: "Compétition",
+  person: "Personnalité",
+  creator: "Créateur",
+  song: "Musique",
+  story: "Récit",
+  video: "Vidéo",
+  comic: "BD",
+  character: "Runeterra",
+  place: "Runeterra",
+  spell: "Runeterra",
+  tft: "TFT",
+};
+const TAG_ORDER = Object.keys(NAME_TAG);
+
+// Two cards never show the same name: namesakes get a tag after it ("Annie - TFT Set 3",
+// "Éclair - Runeterra"). Ids do not change, so collections are untouched.
+export function distinctNames(cards: Card[]): Card[] {
+  const key = (c: Card) => c.name.toLowerCase();
+  const groups = Map.groupBy(cards, key);
+  const renamed = cards.map((card) => {
+    const group = groups.get(key(card))!;
+    if (group.length === 1) return card;
+    const sameType = group.filter((c) => c.type === card.type);
+    const first = group.reduce((a, b) => (TAG_ORDER.indexOf(b.type) < TAG_ORDER.indexOf(a.type) ? b : a));
+    if (card === first && sameType.length === 1) return card;
+    let tag = NAME_TAG[card.type];
+    if (sameType.length > 1) {
+      // Several cards of one type: the tag alone would not tell them apart.
+      const set = card.subtitle?.match(/Set \d+/)?.[0];
+      tag = card.type === "tft" ? (set ? `TFT ${set}` : "TFT") : (card.subtitle?.split(" · ")[0] ?? tag);
+    }
+    return { ...card, name: `${card.name} - ${tag}` };
+  });
+  // Still the same name (a unit and a trait of one TFT set): say what kind of card it is.
+  const after = Map.groupBy(renamed, key);
+  return renamed.map((card) => {
+    const kind = card.subtitle?.split(" · ")[0];
+    return after.get(key(card))!.length > 1 && kind ? { ...card, name: `${card.name} ${kind.toLowerCase()}` } : card;
+  });
+}
 
 export function check(cards: Card[]) {
   const ids = new Set(cards.map((c) => c.id));
   if (ids.size !== cards.length) throw new Error("duplicate card ids");
+  const names = new Set(cards.map((c) => c.name.toLowerCase()));
+  if (names.size !== cards.length) throw new Error("two cards share a name");
   const bad = cards.find((c) => !c.name || !/^(https:\/\/|\/emblems\/)/.test(c.image ?? "") || !RARITIES.includes(c.rarity));
   if (bad) throw new Error(`invalid card: ${JSON.stringify(bad)}`);
 }

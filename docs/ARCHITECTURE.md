@@ -31,7 +31,10 @@ Meraki est la source la plus fragile (bénévole, parfois en retard de plusieurs
 |---|---|
 | Identité et session | Supabase Auth, via `src/lib/supabase/` |
 | Catalogue de cartes (contenu, rareté) | `scripts/build-cards.ts` → `src/data/cards.json` |
-| Tirage d'un booster (probabilités, limites) | `src/lib/booster.ts`, appelé par une Server Action |
+| Tirage d'un booster (probabilités, god pack, essence) | `src/lib/booster.ts`, appelé par la Server Action `openBooster` |
+| Réserve de boosters et enregistrement du tirage | fonction SQL `open_booster` |
+| Lecture du catalogue côté serveur | `src/lib/catalogue.ts` |
+| Prix en essence, cartes secrètes, sceau de forge | `src/lib/forge.ts`, appelé par les Server Actions |
 | Collection des joueurs | table Postgres `collection` |
 
 ## 3. Pourquoi est-ce construit ainsi ?
@@ -39,7 +42,7 @@ Meraki est la source la plus fragile (bénévole, parfois en retard de plusieurs
 - 2026-10-12 — Catalogue en fichier JSON généré, pas en base : ~2 400 cartes en lecture seule qui ne changent qu'à chaque patch. Écarté : table `cards` (une migration de données à chaque patch pour rien).
 - 2026-10-12 — Rareté calculée à la génération et figée dans le catalogue (règles dans `docs/PRD.md`). Elle ne bouge donc qu'en relançant `npm run cards`, pas à chaque variation de taux de sélection.
 - 2026-10-12 — Les types `Card` et `Rarity` vivent dans `src/lib/card.ts`, partagés par le script et le site.
-- 2026-10-12 — Tirage dans une Server Action avec la clé de service, écriture interdite aux clients par RLS : empêche de s'offrir des cartes depuis le navigateur. Écarté : fonction PL/pgSQL (plus dure à lire et à tester).
+- 2026-10-12 — Tirage dans une Server Action (`src/app/actions.ts`, règles dans `src/lib/booster.ts`) avec la clé de service, écriture interdite aux clients par RLS : empêche de s'offrir des cartes depuis le navigateur. L'enregistrement, lui, passe par une fonction SQL (`open_booster`) pour que le retrait du booster et l'ajout des cartes soient indivisibles : un double clic ne peut pas ouvrir deux boosters pour le prix d'un.
 - 2026-10-12 — Images servies depuis les CDN Riot : pas de stockage, pas de quota. Risque accepté : une URL peut changer à un patch, `npm run cards` la régénère.
 
 ## 4. Qui a le droit de toucher quoi ?
@@ -49,6 +52,7 @@ Meraki est la source la plus fragile (bénévole, parfois en retard de plusieurs
 Interdit explicitement :
 
 - Un composant client n'écrit jamais dans Supabase.
+- Une carte secrète (légendaire et plus) que personne n'a trouvée ne part jamais vers le navigateur : la page ne reçoit que leur nombre par rareté.
 - Rien en dehors de `src/lib/booster.ts` ne décide quelles cartes sortent.
 - Le site n'appelle jamais les sources Riot à l'exécution : seulement le script de génération.
 

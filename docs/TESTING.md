@@ -8,7 +8,7 @@ Lanceur intégré à Node (`node --test`), qui exécute le TypeScript directemen
 
 Seulement la logique qui peut être fausse sans que ça se voie :
 
-- le tirage d'un booster : taille, répartition des raretés sur un grand nombre de tirages, respect de la limite ;
+- le tirage d'un booster (`src/lib/booster.test.ts`) : taille, cartes différentes, dernière carte au moins rare, répartition sur un grand nombre de tirages, god pack, recharge de la réserve ;
 - la génération du catalogue : chaque carte a un identifiant unique, une rareté connue et une URL d'image.
 
 ## Quoi ne pas tester

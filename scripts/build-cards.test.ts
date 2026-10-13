@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { championRarity, check, decodeEntities, playerRarity, skinRarity, songRarity, teamRarity } from "./build-cards.ts";
+import type { Card } from "../src/lib/card.ts";
+import { championRarity, check, decodeEntities, distinctNames, playerRarity, skinRarity, songRarity, teamRarity } from "./build-cards.ts";
 
 test("skin rarity adds up Riot tier, availability and age", () => {
   assert.equal(skinRarity(12001, "kNoRarity", { availability: "Limited", release: "2009-06-13" }), "ultimate"); // Black Alistar
@@ -66,4 +67,17 @@ test("check rejects duplicate ids and broken cards", () => {
   check([card]);
   assert.throws(() => check([card, card]));
   assert.throws(() => check([{ ...card, image: "" }]));
+});
+
+test("namesakes get a tag, the first type keeps the bare name", () => {
+  const card = (id: string, type: string, subtitle?: string) =>
+    ({ id, type, name: "Annie", rarity: "common", image: "https://x/a.jpg", subtitle }) as Card;
+  const names = distinctNames([
+    card("1", "champion"),
+    card("2", "spell"),
+    card("3", "tft", "Unité · Set 3 · coût 2"),
+    card("4", "tft", "Unité · Set 14 · coût 4"),
+    { ...card("5", "tft"), name: "Seule" },
+  ]).map((c) => c.name);
+  assert.deepEqual(names, ["Annie", "Annie - Runeterra", "Annie - TFT Set 3", "Annie - TFT Set 14", "Seule"]);
 });

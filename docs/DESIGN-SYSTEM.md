@@ -67,10 +67,15 @@ Angles presque vifs : rayon de 2 à 4 px partout, jamais de pilule. Ombres port�
   - encadrée (`card--framed`) : skins qui ont en jeu une bordure spéciale ou une signature de joueur pro ; l'illustration d'écran de chargement entière, avec les calques officiels par-dessus ;
   - emblème : les cartes sans illustration officielle (serveurs, personnalités, modes et monstres disparus) portent quelques lettres frappées sur une plaque de forge, dessinées par `npm run cards` ; les seules photos de personnes réelles sont les portraits officiels des joueurs e-sport ;
   - grande (`card--large`) ;
-  - mystère (`card--locked`) : cadre et gemme seuls, ni image ni nom.
+  - mystère (`card--locked`) : cadre et gemme seuls, ni image ni nom ; c'est l'état des cartes secrètes que personne n'a trouvées ;
+  - manquante (`card--missing`) : carte visible mais éteinte, pas encore dans la collection du joueur ;
+  - dos (`card--back`) : face cachée sur l'établi, en laiton, sans indice de rareté ; la prochaine à retourner est éclairée.
 - **Râtelier** (`rack`) : les huit gemmes sur un rail de laiton, filtre de rareté avec compteurs.
 - **Onglets de type** (`tabs`) : texte seul, fond braise quand actif.
 - **Recherche**, **interrupteur**.
+- **Réserve** (`stock`) : huit cellules hexagonales, allumées en cyan quand un booster est prêt.
+- **Sceau de forge** (`seal`) : un rail qui se remplit de lumière hextech, une gemme à chaque palier.
+- **Boutique de forge** (`shop`) : un bouton par rareté secrète, avec sa gemme et son prix.
 - **Enclume** (`anvil`) : `<dialog>` natif qui présente la carte ouverte. Deux mises en page :
   - carte à icône ou à image carrée : la grande carte à gauche, le texte à droite ;
   - grande illustration (`anvil--wide`) : l'œuvre entière, non recadrée, remplit la fenêtre ; le texte est posé sur son bord droit et un bouton « Masquer le texte » le range. Sur téléphone le texte passe dessous. Une carte encadrée y montre aussi sa miniature, pour qu'on voie bordure et signature.
@@ -80,7 +85,7 @@ Angles presque vifs : rayon de 2 à 4 px partout, jamais de pilule. Ombres port�
 
 ## Mouvement
 
-Une seule courbe, `--ease-forge`. Le moment fort actuel est l'ouverture d'une carte : elle prend la lumière de sa gemme, qui suit le pointeur ; les cartes à icône s'inclinent en plus vers lui. Le prochain sera l'ouverture d'un booster. `prefers-reduced-motion` coupe l'inclinaison, les reflets et les transitions.
+Une seule courbe, `--ease-forge`. Le moment fort actuel est l'ouverture d'une carte : elle prend la lumière de sa gemme, qui suit le pointeur ; les cartes à icône s'inclinent en plus vers lui. Sur la page Boosters, une carte retournée pivote et s'embrase à la couleur de sa gemme (`forge-reveal`). `prefers-reduced-motion` coupe l'inclinaison, les reflets et les transitions.
 
 ## Icônes et images
 

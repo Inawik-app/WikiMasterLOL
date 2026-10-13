@@ -20,6 +20,7 @@ TypeScript · Next.js 16 (App Router, React 19) · Tailwind 4 · Supabase (Auth 
 | Lint et types | `npm run lint` · `npx tsc --noEmit` |
 | Build | `npm run build` |
 | Régénérer le catalogue de cartes | `npm run cards` |
+| Clés Supabase en local | copier `.env.example` vers `.env.local` et le remplir |
 | Déployer | push sur `main` (Vercel, pas encore relié) |
 
 ## Où trouver quoi
@@ -48,4 +49,4 @@ Lire le document du domaine touché avant de le modifier. Pas les autres.
 
 - Next.js 16 diffère de ce que Claude connaît : lire `node_modules/next/dist/docs/` avant d'utiliser une API (voir `AGENTS.md`).
 - `create-next-app` refuse les majuscules du nom de dossier : le paquet s'appelle `wikimaster-lol`.
-- Le projet est sur un lecteur réseau (Z:) : `next dev` ne voit pas toujours les fichiers modifiés. Si un changement de CSS ou de composant n'apparaît pas, redémarrer le serveur avant de chercher un bug.
+- Le projet est sur un lecteur réseau (Z:) : `next dev` ne voit pas toujours les fichiers modifiés. Si un changement de CSS ou de composant n'apparaît pas, redémarrer le serveur ; si ça ne suffit pas, l'arrêter, supprimer le dossier `.next/dev` (cache régénéré tout seul) et le relancer.

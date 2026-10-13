@@ -16,11 +16,13 @@ Ouvre des boosters de cartes League of Legends et complète ta collection avant 
 
 | Fonctionnalité | L'utilisateur peut… | Terminé quand… |
 |---|---|---|
-| Catalogue | — | `npm run cards` produit un JSON avec champions, skins, compétences, sorts d'invocateur, runes, objets, récits, vidéos, cartes d'univers, e-sport, Teamfight Tactics, monstres, cartes, modes, musiques et personnalités, chacune avec une rareté et une image |
+| Catalogue | — | `npm run cards` produit un JSON avec champions, skins, compétences, sorts d'invocateur, runes, objets, récits, vidéos, cartes d'univers, e-sport, Teamfight Tactics, monstres, cartes, modes, musiques et personnalités, chacune avec une rareté et une image ; deux cartes ne portent jamais le même nom (les homonymes reçoivent une étiquette : « Annie - TFT Set 3 », « Bastion - Runeterra ») |
 | Compte | se connecter | la collection est retrouvée depuis un autre appareil |
-| Booster | ouvrir un booster et découvrir ses cartes | les cartes tirées apparaissent dans sa collection ; la limite d'ouverture est respectée côté serveur |
-| Collection | parcourir ses cartes, filtrer par type et rareté, voir sa progression | le compteur « x / total » est juste |
-| Amis | voir la collection d'un autre joueur | la page d'un ami affiche ses cartes en lecture seule |
+| Booster | ouvrir un booster sur la page « Boosters » et retourner ses cartes une à une | les cartes tirées apparaissent dans sa collection ; la limite d'ouverture est respectée côté serveur |
+| Ordre des pages | Boosters en accueil (`/`), puis Collection, puis Catalogue | — |
+| Catalogue | parcourir toutes les cartes, filtrer celles que le groupe a découvertes, acheter avec l'essence | une carte secrète non trouvée reste une silhouette |
+| Collection | page à part : uniquement les cartes qu'il possède, mêmes filtres | le compteur « x sur total » est juste |
+| Amis | page « Amis » : ajouter un joueur du jeu (immédiat, réciproque, sans demande), le retirer, ouvrir sa collection | la collection d'un ami affiche ses cartes en lecture seule |
 
 ## Hors périmètre
 
@@ -50,9 +52,6 @@ Les amis reviennent ouvrir leurs boosters sans qu'on le leur rappelle.
 
 ## Questions ouvertes
 
-- À DÉCIDER : rythme des boosters (un par jour ? toutes les X heures ? cumulables ?).
-- À DÉCIDER : taille d'un booster et probabilités par rareté ; garantie d'une carte rare ou non.
-- À DÉCIDER : que faire des doublons (simple compteur, ou recyclage en quelque chose).
 - À DÉCIDER : comment débloquer les différents chromas d'un skin (voir « Chromas »).
 - À DÉCIDER : quelles familles de cartes ajouter pour se rapprocher de 10 000 (le catalogue en compte 8 729 ; emotes, icônes et balises sont exclus). Pistes restantes : optimisations et petites légendes de Teamfight Tactics.
 - À DÉCIDER : nom du jeu.
@@ -89,6 +88,48 @@ Huit paliers, du plus courant au plus rare : commun, peu commun, rare, épique, 
 - **Cartes et modes de jeu** : Faille de l'invocateur transcendante, autres cartes légendaires, modes rares à épiques ; ce qui a été retiré du jeu est mythique (Forêt torturée, Brèche de cristal, Dominion).
 - **Voies** : épiques. **Serveurs** : peu communs.
 - **Legends of Runeterra** (personnages, lieux, sorts, objets ; tout sauf les cartes de champion) : jetons et communs → commun, rare → peu commun, épique → épique pour un personnage ou un lieu, rare pour un sort.
+
+## Boosters (décidé le 2026-10-12)
+
+Tout est réglé dans `src/lib/booster.ts`.
+
+- **Rythme** : un booster par heure, huit en réserve au plus. Un nouveau joueur commence avec la réserve pleine.
+- **Contenu** : cinq cartes différentes. Les quatre premières suivent la table ci-dessous ; la dernière est au moins rare.
+- **God pack** : un booster sur cinq mille contient une carte de chaque rareté à partir d'épique (épique, légendaire, mythique, ultime, transcendant).
+- **Doublons** : une carte déjà possédée n'entre pas en double dans la collection, elle est convertie en essence.
+
+| Rareté | Cartes 1 à 4 | Dernière carte | Essence du doublon |
+|---|---|---|---|
+| Commun | 55 % | — | 5 |
+| Peu commun | 30 % | — | 10 |
+| Rare | 11 % | 78 % | 25 |
+| Épique | 3,2 % | 18 % | 60 |
+| Légendaire | 0,65 % | 3,3 % | 150 |
+| Mythique | 0,12 % | 0,55 % | 400 |
+| Ultime | 0,025 % | 0,12 % | 1 200 |
+| Transcendant | 0,005 % | 0,03 % | 4 000 |
+
+Objectif d'équilibre : environ un an pour avoir la plupart des cartes en jouant chaque jour, les paliers hauts restant un accomplissement. Une simulation d'un an (une visite par jour, 8 boosters) donne 76 % du catalogue, 38 % des légendaires, 11 % des mythiques, avant toute dépense d'essence.
+
+## Essence, secret et sceau de forge (décidé le 2026-10-13)
+
+Tout est réglé dans `src/lib/forge.ts`.
+
+- **Essence, deux étages.** En dessous de légendaire, on achète la carte exacte depuis le catalogue. À partir de légendaire, on forge une carte au hasard dans la rareté choisie, toujours une que l'on n'a pas.
+
+| Rareté | Mode | Prix |
+|---|---|---|
+| Commun | achat direct | 30 |
+| Peu commun | achat direct | 60 |
+| Rare | achat direct | 150 |
+| Épique | achat direct | 400 |
+| Légendaire | forge au hasard | 1 500 |
+| Mythique | forge au hasard | 5 000 |
+| Ultime | forge au hasard | 20 000 |
+| Transcendant | forge au hasard | 60 000 |
+
+- **Secret.** Les cartes en dessous de légendaire sont toujours visibles, éteintes tant qu'on ne les possède pas. À partir de légendaire, une carte reste une silhouette mystère jusqu'à ce qu'un joueur du groupe la trouve ; elle est alors révélée à tous, avec le nom de celui qui l'a découverte. Les cartes secrètes non découvertes ne sont jamais envoyées au navigateur.
+- **Sceau de forge.** Un point par jour où l'on ouvre au moins un booster (jour compté à l'heure de Paris). La jauge ne se vide jamais. Sur chaque cycle de 28 jours : une carte mythique au jour 14, une ultime au jour 21, une transcendante au jour 28, toujours une carte que le joueur n'a pas. S'il les a toutes, il reçoit le prix de forge en essence.
 
 ## Chromas
 
