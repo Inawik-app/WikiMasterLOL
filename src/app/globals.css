@@ -133,6 +133,78 @@
     text-wrap: pretty;
   }
 
+  /* A question mark that opens an explanation. */
+  .help {
+    display: inline-grid;
+    place-items: center;
+    width: 1.6rem;
+    height: 1.6rem;
+    margin-left: 0.2rem;
+    border: 1px solid var(--color-brass);
+    border-radius: 50%;
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--color-brass);
+    vertical-align: middle;
+    transition: background-color 0.2s, color 0.2s;
+  }
+  .help:hover {
+    background: var(--color-brass);
+    color: var(--color-forge-950);
+  }
+  /* The odds of a booster, in a popover. */
+  .odds {
+    width: min(28rem, calc(100vw - 2rem));
+    max-height: calc(100dvh - 2rem);
+    margin: auto;
+    padding: 1.5rem;
+    overflow-y: auto;
+    border: 1px solid color-mix(in oklab, var(--color-brass) 55%, transparent);
+    border-radius: 4px;
+    background: var(--color-forge-900);
+    color: var(--color-mist);
+    box-shadow: 0 40px 80px -30px rgb(0 0 0 / 0.9);
+  }
+  .odds::backdrop {
+    background: rgb(2 6 7 / 0.6);
+  }
+  .odds h2 {
+    margin-bottom: 1rem;
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    color: var(--color-ivory);
+  }
+  .odds table {
+    width: 100%;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+  }
+  .odds th,
+  .odds td {
+    padding: 0.45rem 0.5rem;
+    border-bottom: 1px solid var(--color-forge-700);
+    text-align: right;
+  }
+  .odds th:first-child {
+    text-align: left;
+  }
+  .odds thead th {
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+  .odds tbody th {
+    font-weight: 600;
+    color: color-mix(in oklab, var(--gem) 70%, white);
+  }
+  .odds td {
+    color: var(--color-ivory);
+  }
+  .odds p {
+    margin: 1rem 0;
+    line-height: 1.5;
+  }
+
   .sitenav {
     display: flex;
     gap: 0.25rem;
