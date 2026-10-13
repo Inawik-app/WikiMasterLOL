@@ -22,7 +22,12 @@ export function SiteHeader({ current }: { current?: (typeof PAGES)[number][0] })
             href={href}
             aria-current={current === page ? "page" : undefined}
             // The bar follows the scroll: the link of the page already open takes back to its top.
-            onClick={() => current === page && window.scrollTo({ top: 0, behavior: "smooth" })}
+            // No navigation in that case: it would cancel the scroll.
+            onClick={(event) => {
+              if (current !== page) return;
+              event.preventDefault();
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
           >
             {label}
           </Link>
