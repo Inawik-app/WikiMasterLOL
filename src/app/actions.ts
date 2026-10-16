@@ -3,7 +3,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { FaceCard } from "@/components/CardFace";
 import { drawBooster, ESSENCE } from "@/lib/booster";
-import type { Chroma, Rarity } from "@/lib/card";
+import { type Chroma, RARITIES, type Rarity } from "@/lib/card";
 import { cardById, cardPool, toFaceCard, toListCard } from "@/lib/catalogue";
 import { announceCardRank, announceDiscovery, announceGift, announceSeal } from "@/lib/discord";
 import { CHROMA_PRICE, isSecret, nextSealMilestone, PRICE, sealReward, SECRET_RARITIES } from "@/lib/forge";
@@ -483,6 +483,31 @@ export async function dismissGifts(until: string): Promise<void> {
   const s = await session();
   if (s.failure || typeof until !== "string" || Number.isNaN(Date.parse(until))) return;
   await s.admin.from("gifts").update({ seen: true }).eq("to_id", s.user.id).lte("given_at", until);
+}
+
+export type OpenedBooster = { at: string; cards: { name: string; rarity: Rarity }[] };
+
+// The boosters this player opened lately, newest first, from the draw log (kept two months).
+export async function boosterHistory(): Promise<OpenedBooster[] | null> {
+  const s = await session();
+  if (s.failure) return null;
+  const { data, error } = await s.admin
+    .from("draws")
+    .select("card_id, rarity, drawn_at")
+    .eq("user_id", s.user.id)
+    .order("drawn_at", { ascending: false })
+    .limit(1000); // 200 boosters
+  if (error) return null;
+  const cards = cardById();
+  // The five cards of a booster are written together, with the same time.
+  const boosters: OpenedBooster[] = [];
+  for (const row of data) {
+    if (boosters.at(-1)?.at !== row.drawn_at) boosters.push({ at: row.drawn_at, cards: [] });
+    boosters.at(-1)!.cards.push({ name: cards.get(row.card_id)?.name ?? "Carte retirée", rarity: row.rarity });
+  }
+  // Least rare first, as on the bench.
+  for (const booster of boosters) booster.cards.sort((x, y) => RARITIES.indexOf(x.rarity) - RARITIES.indexOf(y.rarity));
+  return boosters;
 }
 
 // --- Account -------------------------------------------------------------------

@@ -9,6 +9,7 @@ import { essences, essenceWord, isSecret } from "@/lib/forge";
 import { nextSealMilestone, PRICE, SEAL_CYCLE, SEAL_STEPS, sealReward, SECRET_RARITIES } from "@/lib/forge";
 import { RANKS } from "@/lib/upgrades";
 import { createClient } from "@/lib/supabase/client";
+import { BoosterHistory } from "./BoosterHistory";
 import { CardDialog } from "./CardDialog";
 import { CardFace, cardClass, cardLabel, type FaceCard } from "./CardFace";
 import { Gem, GemDefs } from "./Gem";
@@ -384,6 +385,8 @@ export function BoosterForge() {
           ))}
         </ul>
       </section>
+
+      <BoosterHistory />
     </>
   );
 }

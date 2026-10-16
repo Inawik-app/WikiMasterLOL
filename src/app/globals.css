@@ -1487,6 +1487,57 @@
       var(--color-forge-700);
   }
 
+  /* --- Booster history: one line per booster ---------------------------------- */
+
+  .history .forge__secondary {
+    justify-self: start;
+  }
+  .history__list {
+    display: grid;
+    gap: 0.4rem;
+  }
+  .history__list > li {
+    display: grid;
+    grid-template-columns: 7.5rem 1fr;
+    align-items: center;
+    gap: 0.4rem 1rem;
+    padding: 0.55rem 0.8rem;
+    border: 1px solid var(--color-forge-700);
+    border-radius: 3px;
+    background: var(--color-forge-900);
+  }
+  /* A booster with a legendary or rarer card stands out. */
+  .history__list > li[data-lit="true"] {
+    border-color: color-mix(in oklab, var(--color-ember) 60%, var(--color-forge-700));
+    box-shadow: inset 3px 0 0 var(--color-ember);
+  }
+  .history__list time {
+    font-size: 0.95rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-mist);
+  }
+  .history__list ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem 0.9rem;
+  }
+  .history__list ul li {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.95rem;
+    color: var(--color-mist);
+  }
+  .history__list ul svg {
+    width: 0.95rem;
+    flex: none;
+  }
+  /* From legendary up, the name lights in its gem colour. */
+  .history__list ul li:is([data-rarity="legendary"], [data-rarity="mythic"], [data-rarity="ultimate"], [data-rarity="transcendent"]) {
+    font-weight: 600;
+    color: color-mix(in oklab, var(--gem) 70%, white);
+  }
+
   /* --- Friends ------------------------------------------------------------ */
 
   .players {
@@ -1957,6 +2008,9 @@
     .user__signout {
       padding: 0.4rem 0.6rem;
       font-size: 0.9rem;
+    }
+    .history__list > li {
+      grid-template-columns: 1fr;
     }
     /* The count on its own line, sorting and filters underneath. */
     .tally {
