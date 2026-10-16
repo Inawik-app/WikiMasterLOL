@@ -125,8 +125,8 @@ export function Friends(props: { cards: FaceCard[]; secretTotals: Record<Rarity,
         </div>
         <div className="gift">
           <p>
-            Clique sur les cartes de ta collection que tu veux lui donner, autant que tu veux. Les cartes éteintes, il
-            les a déjà. Une carte donnée quitte ta collection, avec son rang et ses chromas.
+            Clique sur les cartes de ta collection que tu veux lui donner, autant que tu veux. Celles qu&apos;il a
+            déjà ne sont pas affichées. Une carte donnée quitte ta collection, avec son rang et ses chromas.
           </p>
           <label className="sort">
             Essence à donner

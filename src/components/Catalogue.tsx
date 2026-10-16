@@ -125,9 +125,11 @@ export function Catalogue({
       if (it.kind === "secret") return source === "all" && type === "all" && !q && !mine && !foundOnly;
       if (source !== "all" && TYPE_SOURCE[it.card.type] !== source) return false;
       if (mine ? !it.owned || (favOnly && !it.fav) : foundOnly && !it.found) return false;
+      // Picking a gift: the cards the friend already has cannot be given, so they are not shown.
+      if (select?.blocked.has(it.card.id)) return false;
       return (type === "all" || it.card.type === type) && (!q || searchIndex.get(it.key)!.includes(q));
     });
-  }, [items, searchIndex, source, type, query, mine, foundOnly, favOnly]);
+  }, [items, searchIndex, source, type, query, mine, foundOnly, favOnly, select?.blocked]);
 
   const rarityCount = useMemo(() => {
     const counts = Object.fromEntries(RARITIES.map((r) => [r, 0])) as Record<Rarity, number>;
