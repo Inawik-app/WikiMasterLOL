@@ -8,6 +8,7 @@ import { cardById, cardPool, toFaceCard, toListCard } from "@/lib/catalogue";
 import { announceCardRank, announceDiscovery, announceGift, announceSeal } from "@/lib/discord";
 import { CHROMA_PRICE, isSecret, nextSealMilestone, PRICE, sealReward, SECRET_RARITIES } from "@/lib/forge";
 import { adminClient, currentUser, readAll } from "@/lib/supabase/server";
+import { chancePerBooster, oddsText } from "@/lib/luck";
 import { duplicateRule, isRanked, RANKS } from "@/lib/upgrades";
 
 // Every action follows the same pattern: find out who is asking, decide here on the server,
@@ -39,7 +40,8 @@ async function usernameOf(admin: SupabaseClient, userId: string) {
 
 // Tells the group's Discord about the secret cards this player is the first to own.
 // Rare by nature, so the extra requests only run a few times a week.
-async function celebrate(admin: SupabaseClient, userId: string, cardIds: (string | null)[]) {
+// `fromBooster`: the cards came out of a booster, so the announcement gives the odds.
+async function celebrate(admin: SupabaseClient, userId: string, cardIds: (string | null)[], fromBooster = false) {
   if (!process.env.DISCORD_WEBHOOK_URL) return;
   const secret = cardIds.flatMap((id) => {
     const card = id ? cardById().get(id) : undefined;
@@ -49,7 +51,14 @@ async function celebrate(admin: SupabaseClient, userId: string, cardIds: (string
   const { data: profile } = await admin.from("profiles").select("username").eq("id", userId).single();
   for (const card of secret) {
     const { count } = await admin.from("collection").select("*", { count: "exact", head: true }).eq("card_id", card.id);
-    if (count === 1) await announceDiscovery(profile?.username ?? "Un joueur", card);
+    if (count !== 1) continue;
+    const odds = fromBooster
+      ? {
+          rarity: oddsText(chancePerBooster(card.rarity)),
+          card: oddsText(chancePerBooster(card.rarity, cardPool()[card.rarity].length)),
+        }
+      : undefined;
+    await announceDiscovery(profile?.username ?? "Un joueur", card, odds);
   }
 }
 
@@ -100,7 +109,7 @@ export async function openBooster(): Promise<BoosterResult> {
   // Kept for the weekly recap, which compares each player's draws with the odds. Not vital:
   // if it fails, the booster is opened all the same.
   await s.admin.from("draws").insert(drawn.map((d) => ({ user_id: s.user.id, card_id: d.id, rarity: d.rarity })));
-  await celebrate(s.admin, s.user.id, rows.filter((row) => row.outcome === "new").map((row) => row.card));
+  await celebrate(s.admin, s.user.id, rows.filter((row) => row.outcome === "new").map((row) => row.card), true);
   const climbed = rows.filter((row) => row.outcome === "rank" && (row.level ?? 0) >= ANNOUNCED_CARD_RANK);
   if (climbed.length && process.env.DISCORD_WEBHOOK_URL) {
     const player = await usernameOf(s.admin, s.user.id);

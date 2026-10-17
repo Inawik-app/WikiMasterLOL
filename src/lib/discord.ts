@@ -43,10 +43,22 @@ async function post(embed: Embed) {
 }
 
 // A player is the first of the group to find a secret card.
-export function announceDiscovery(player: string, card: Pick<Card, "name" | "rarity" | "image">) {
+// `odds` is set when the card came out of a booster: the chances the player had.
+export function announceDiscovery(
+  player: string,
+  card: Pick<Card, "name" | "rarity" | "image">,
+  odds?: { rarity: string; card: string },
+) {
   return post({
     title: `${card.name} · ${RARITY_LABEL[card.rarity]}`,
-    description: `**${player}** vient de découvrir une carte que personne n'avait encore trouvée.`,
+    description:
+      `**${player}** vient de découvrir une carte que personne n'avait encore trouvée.` +
+      (odds
+        ? `
+
+Une carte ${RARITY_LABEL[card.rarity].toLowerCase()} dans un booster : ${odds.rarity}.
+Cette carte-là précisément : ${odds.card}.`
+        : ""),
     color: COLOR[card.rarity],
     // Emblems are local files of the site: Discord could not fetch them.
     thumbnail: card.image.startsWith("https://") ? { url: card.image } : undefined,

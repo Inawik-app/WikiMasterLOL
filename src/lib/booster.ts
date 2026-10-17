@@ -35,7 +35,7 @@ export const LAST_CARD_ODDS: Record<Rarity, number> = {
 // One booster in five thousand is a god pack: one card of each rarity from epic up.
 // Kept that rare on purpose: more often, it would become the main source of transcendent cards.
 export const GOD_PACK_CHANCE = 1 / 5000;
-const GOD_PACK: Rarity[] = ["epic", "legendary", "mythic", "ultimate", "transcendent"];
+export const GOD_PACK: Rarity[] = ["epic", "legendary", "mythic", "ultimate", "transcendent"];
 
 // Essence given by a card the player already owns.
 export const ESSENCE: Record<Rarity, number> = {

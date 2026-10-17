@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { luck, oddsText, rareCardsPerBooster } from "./luck.ts";
+import { chancePerBooster, luck, oddsText, rareCardsPerBooster } from "./luck.ts";
 
 test("a booster holds about 0.07 legendary or better card on average", () => {
   // 4 × 0.8 % + 4.0 %, plus a sliver for god packs.
@@ -18,6 +18,16 @@ test("luck compares what a player got with what the odds promised", () => {
   // The two tails overlap on the exact count.
   const mid = luck(3, 50);
   assert.ok(mid.atLeast + mid.atMost > 1);
+});
+
+test("chance of a rarity, or of one card, in a booster", () => {
+  // A mythic: about one booster in 95.
+  const mythic = chancePerBooster("mythic");
+  assert.ok(mythic > 0.0103 && mythic < 0.0106, `got ${mythic}`);
+  // One mythic card out of 256: about 256 times less likely.
+  assert.ok(Math.abs(chancePerBooster("mythic", 256) * 256 - mythic) / mythic < 0.01);
+  // Commons only come in the first four cards.
+  assert.ok(Math.abs(chancePerBooster("common") - (1 - 0.45 ** 4)) < 1e-3);
 });
 
 test("odds read as a sentence", () => {
