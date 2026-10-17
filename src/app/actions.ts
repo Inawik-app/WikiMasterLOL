@@ -455,7 +455,7 @@ export async function giveToFriend(friendId: string, cardIds: string[], essence:
   return { ok: true };
 }
 
-export type ReceivedGift = { from: string; cards: string[]; essence: number; at: string };
+export type ReceivedGift = { from: string; cards: FaceCard[]; essence: number; at: string };
 
 // The gifts this player has received and not yet acknowledged, oldest first.
 export async function pendingGifts(): Promise<ReceivedGift[]> {
@@ -472,7 +472,10 @@ export async function pendingGifts(): Promise<ReceivedGift[]> {
   const cards = cardById();
   return gifts.map((gift) => ({
     from: givers?.find((p) => p.id === gift.from_id)?.username ?? "Un joueur",
-    cards: (gift.card_ids as string[]).flatMap((id) => cards.get(id)?.name ?? []),
+    cards: (gift.card_ids as string[]).flatMap((id) => {
+      const card = cards.get(id);
+      return card ? [toListCard(card)] : [];
+    }),
     essence: gift.essence,
     at: gift.given_at,
   }));
