@@ -2,12 +2,20 @@ import { DIVISIONS, playerRank } from "@/lib/level";
 
 // A player's rank as a crest. One piece is added at each rank, so the crest grows from a bare
 // plate of iron to a crowned, winged, ringed emblem; pips under it count the division. Its metal
-// comes from `data-rank` (see the styles), which also lights it from Émeraude up.
+// comes from `data-rank` (see the styles), which also lights it from Émeraude up; within a rank,
+// `data-division` makes the plate brighter and the crest glow more as the player climbs.
 // The tooltip says everything: rank, division, cards, and what is left before the next step.
 export function RankBadge({ cards, className = "" }: { cards: number; className?: string }) {
   const { rank, division, summary } = playerRank(cards);
   return (
-    <svg viewBox="0 0 48 48" className={`rank ${className}`} data-rank={rank} role="img" aria-label={summary}>
+    <svg
+      viewBox="0 0 48 48"
+      className={`rank ${className}`}
+      data-rank={rank}
+      data-division={division}
+      role="img"
+      aria-label={summary}
+    >
       <title>{summary}</title>
       {/* Grand Maître: a ring around the whole crest. */}
       {rank >= 9 && <circle cx="24" cy="24" r="21.5" className="rank__line" />}

@@ -1445,6 +1445,27 @@
   .rank__metal {
     fill: var(--frame);
   }
+  /* Climbing the divisions of a rank: the plate takes more metal, then the crest glows,
+     and in division I the gem pulses. */
+  .rank[data-division="2"] .rank__plate {
+    fill: color-mix(in oklab, var(--frame) 40%, #0b1416);
+  }
+  .rank[data-division="3"] .rank__plate {
+    fill: color-mix(in oklab, var(--frame) 52%, #0b1416);
+  }
+  .rank[data-division="4"] .rank__plate {
+    fill: color-mix(in oklab, var(--frame) 62%, #0b1416);
+  }
+  .rank:is([data-division="3"], [data-division="4"]) .rank__line,
+  .rank:is([data-division="3"], [data-division="4"]) .rank__metal {
+    filter: drop-shadow(0 0 1.5px var(--frame));
+  }
+  .rank[data-division="4"] .rank__gem {
+    animation: gem-pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes gem-pulse {
+    50% { fill: white; }
+  }
   .rank__pip {
     fill: var(--color-forge-700);
   }
@@ -2151,6 +2172,7 @@
     .card__art::before,
     .gift-box,
     .rank,
+    .rank__gem,
     .card[data-rank],
     .pack__slot--dealt,
     .aura__rays,

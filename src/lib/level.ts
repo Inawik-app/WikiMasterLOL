@@ -6,9 +6,12 @@ import { RANKS } from "./upgrades.ts";
 const STEP = 728;
 export const RANK_STEPS = RANKS.map((_, i) => i * STEP);
 
-// Each rank below Challenger is cut in four divisions, 1 to 4, so that something is always
-// within reach: a division is 182 cards.
+// Each rank below Challenger is cut in four divisions, so that something is always within reach:
+// a division is 182 cards. As in League of Legends they count down: Fer IV, III, II, I, then
+// Bronze IV. `division` is the step reached inside the rank (1 for IV, 4 for I), the label
+// shows the numeral.
 export const DIVISIONS = 4;
+const NUMERAL = ["IV", "III", "II", "I"];
 const DIVISION_STEP = STEP / DIVISIONS;
 
 const count = new Intl.NumberFormat("fr-FR");
@@ -20,21 +23,21 @@ export function playerRank(cards: number) {
   const division = top ? undefined : Math.floor((cards - RANK_STEPS[rank - 1]) / DIVISION_STEP) + 1;
   const from = RANK_STEPS[rank - 1] + ((division ?? 1) - 1) * DIVISION_STEP;
   const next = top ? undefined : from + DIVISION_STEP; // undefined at Challenger
-  const label = division ? `${RANKS[rank - 1]} ${division}` : RANKS[rank - 1];
+  const label = division ? `${RANKS[rank - 1]} ${NUMERAL[division - 1]}` : RANKS[rank - 1];
   // What comes after this division: the next one, or the first of the next rank.
   const nextLabel =
     division === undefined
       ? undefined
       : division < DIVISIONS
-        ? `${RANKS[rank - 1]} ${division + 1}`
+        ? `${RANKS[rank - 1]} ${NUMERAL[division]}`
         : rank + 1 === RANKS.length
           ? RANKS[rank]
-          : `${RANKS[rank]} 1`;
+          : `${RANKS[rank]} ${NUMERAL[0]}`;
   return {
     rank,
     name: RANKS[rank - 1],
     division,
-    label, // "Or 3", "Challenger"
+    label, // "Or II", "Challenger"
     next,
     // How far along the current division, from 0 to 1.
     progress: next === undefined ? 1 : (cards - from) / DIVISION_STEP,

@@ -17,6 +17,20 @@ const count = new Intl.NumberFormat("fr-FR");
 const decimal = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 });
 const plural = (n: number, one: string, many: string) => `${count.format(n)} ${n > 1 ? many : one}`;
 
+// "1 mythique, 2 légendaires"
+const RARE_WORD: Partial<Record<Rarity, [string, string]>> = {
+  legendary: ["légendaire", "légendaires"],
+  mythic: ["mythique", "mythiques"],
+  ultimate: ["ultime", "ultimes"],
+  transcendent: ["transcendante", "transcendantes"],
+};
+function rareList(rarities: Rarity[]) {
+  const counts = new Map<Rarity, number>();
+  for (const r of rarities) counts.set(r, (counts.get(r) ?? 0) + 1);
+  return [...counts].map(([r, n]) => plural(n, ...RARE_WORD[r]!)).join(", ");
+}
+const dayFormat = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long" });
+
 export type Recap = { title: string; sections: { name: string; value: string }[] };
 
 // A table added by a later migration may not exist yet: the recap then goes without it.
@@ -45,6 +59,11 @@ export async function weeklyRecap(admin: SupabaseClient, now = new Date()): Prom
       ),
     ),
   ]);
+  // The draw log may be younger than the week: luck then only covers the part it saw.
+  const { data: firstDraw } = await admin.from("draws").select("drawn_at").order("drawn_at").limit(1);
+  const logStart = firstDraw?.[0]?.drawn_at as string | undefined;
+  const partial = logStart !== undefined && logStart > since;
+
   // Old draws are of no use any more.
   await admin.from("draws").delete().lt("drawn_at", new Date(now.getTime() - 8 * WEEK).toISOString());
 
@@ -59,6 +78,13 @@ export async function weeklyRecap(admin: SupabaseClient, now = new Date()): Prom
       name: profile.username as string,
       total: mine.length,
       gained: mine.filter((row) => row.first_obtained_at >= since).length,
+      // Cards from legendary up that joined the collection this week, whatever their source
+      // (booster, forge, seal, gift), rarest first.
+      gainedRare: mine
+        .filter((row) => row.first_obtained_at >= since)
+        .map((row) => cards.get(row.card_id)?.rarity)
+        .filter((rarity): rarity is Rarity => rarity !== undefined && isSecret(rarity))
+        .sort((a, b) => RARITIES.indexOf(b) - RARITIES.indexOf(a)),
       boosters,
       rare,
       ...luck(rare, boosters),
@@ -87,7 +113,7 @@ export async function weeklyRecap(admin: SupabaseClient, now = new Date()): Prom
     .sort((a, b) => b.total - a.total)
     .map((p) => {
       const { rank, label } = playerRank(p.total);
-      return `${RANK_EMOJI[rank - 1]} **${p.name}** · ${label} · ${plural(p.total, "carte", "cartes")}${p.gained ? ` (+${count.format(p.gained)})` : ""}`;
+      return `${RANK_EMOJI[rank - 1]} **${p.name}** · ${label} · ${plural(p.total, "carte", "cartes")}${p.gained ? ` (+${count.format(p.gained)}${p.gainedRare.length ? `, dont ${rareList(p.gainedRare)}` : ""})` : ""}`;
     });
   const found = discoveries
     .flatMap((d) => {
@@ -112,7 +138,9 @@ export async function weeklyRecap(admin: SupabaseClient, now = new Date()): Prom
       {
         name: "La chance de la semaine",
         value:
-          fit(luckLines as string[], "") ||
+          (partial && luckLines.length ? `Boosters enregistrés depuis le ${dayFormat.format(new Date(logStart!))} seulement.
+` : "") +
+            fit(luckLines as string[], "") ||
           `Personne n'a ouvert au moins ${MIN_BOOSTERS} boosters cette semaine : pas assez pour parler de chance.`,
       },
       {
