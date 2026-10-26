@@ -3,7 +3,7 @@
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { buyCard, buyChroma, cardDetail, collectionState, type CollectionState, type Owned, pickChroma, setFavorite } from "@/app/actions";
 import { type CardType, RARITIES, RARITY_LABEL, type Rarity, type Source, SOURCE_LABEL, SOURCES, TYPE_LABEL, TYPE_SOURCE } from "@/lib/card";
-import { CHROMA_PRICE, essences, isSecret, PRICE, SECRET_RARITIES } from "@/lib/forge";
+import { essences, isSecret, PRICE, SECRET_RARITIES } from "@/lib/forge";
 import { RANKS } from "@/lib/upgrades";
 import { createClient } from "@/lib/supabase/client";
 import { CardDialog } from "./CardDialog";
@@ -62,6 +62,8 @@ export function Catalogue({
   const [limit, setLimit] = useState(PAGE);
   const [opened, setOpened] = useState<CardItem | null>(null);
   const [favOnly, setFavOnly] = useState(false);
+  // A chroma being previewed on the opened card: its colours, null for the original look.
+  const [preview, setPreview] = useState<string[] | null | undefined>(undefined);
   // Collection filters for chromas: skins that have some, and skins with a chroma to choose.
   const [chromaFilter, setChromaFilter] = useState<"all" | "skins" | "pending">("all");
   const [sort, setSort] = useState<"rarity" | "recent" | "name">("rarity");
@@ -243,9 +245,8 @@ export function Catalogue({
   };
 
   // A locked chroma, with no pick left: it can be bought with essence, after a word of warning.
-  const purchaseChroma = async (item: CardItem, chromaId: number, name: string) => {
-    const price = CHROMA_PRICE[item.card.rarity];
-    if (!window.confirm(`Acheter le chroma « ${name} » pour ${essences(price)} ?`)) return;
+  // The picker shows the price and asks for a click on « Acheter » first: no second question.
+  const purchaseChroma = async (item: CardItem, chromaId: number) => {
     setNotice(null);
     const result = await buyChroma(item.card.id, chromaId).catch(() => ({ ok: false, reason: "unavailable" }) as const);
     if (result.ok) {
@@ -275,11 +276,13 @@ export function Catalogue({
           )}
           {opened.options && (
             <ChromaPicker
+              key={opened.card.id}
+              onPreview={setPreview}
               rarity={opened.card.rarity}
               state={{ options: opened.options, unlocked: opened.unlocked, chroma: opened.chroma, picks: opened.picks }}
               essence={state.essence}
               onWear={(id) => wear(opened, id)}
-              onBuy={(id, name) => purchaseChroma(opened, id, name)}
+              onBuy={(id) => purchaseChroma(opened, id)}
             />
           )}
         </>
@@ -553,7 +556,12 @@ export function Catalogue({
       )}
       {shown.length < results.length && <div ref={sentinel} className="sentinel" aria-hidden="true" />}
 
-      <CardDialog card={opened?.card ?? null} look={opened ? lookOf(opened) : undefined} onClose={() => setOpened(null)}>
+      <CardDialog card={opened?.card ?? null} look={opened ? (preview === undefined ? lookOf(opened) : { rank: opened.rank, colors: preview ?? undefined }) : undefined}
+        onClose={() => {
+          setOpened(null);
+          setPreview(undefined);
+        }}
+      >
         {ownership}
       </CardDialog>
 

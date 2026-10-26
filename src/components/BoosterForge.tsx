@@ -49,6 +49,7 @@ export function BoosterForge() {
   const [pack, setPack] = useState<Pack | null>(null);
   const [revealed, setRevealed] = useState(0); // how many cards on the bench are face up
   const [zoomed, setZoomed] = useState<FaceCard | null>(null); // the revealed card opened in large
+  const [chromaPreview, setChromaPreview] = useState<string[] | null | undefined>(undefined); // on the card opened in large
   const [favs, setFavs] = useState<Set<string>>(new Set()); // favourites among the cards on the bench
   const [clockLag, setClockLag] = useState(0); // server clock minus this device's clock
   // The light show playing for a rare card just turned over. `key` restarts it for the next one.
@@ -336,16 +337,29 @@ export function BoosterForge() {
         card={zoomed}
         look={(() => {
           const c = pack?.cards.find((o) => o.card.id === zoomed?.id)?.chromas;
-          return c ? { colors: c.options.find((option) => option.id === c.chroma)?.colors } : undefined;
+          if (!c) return undefined;
+          if (chromaPreview !== undefined) return { colors: chromaPreview ?? undefined };
+          return { colors: c.options.find((option) => option.id === c.chroma)?.colors };
         })()}
-        onClose={() => setZoomed(null)}
+        onClose={() => {
+          setZoomed(null);
+          setChromaPreview(undefined);
+        }}
       >
         {zoomed && (
           <div className="anvil__own">
             {star(zoomed, "forge__secondary")}
             {(() => {
               const c = pack?.cards.find((o) => o.card.id === zoomed.id)?.chromas;
-              return c ? <ChromaPicker rarity={zoomed.rarity} state={c} onWear={(id) => wearOnBench(zoomed.id, id)} /> : null;
+              return c ? (
+                <ChromaPicker
+                  key={zoomed.id}
+                  rarity={zoomed.rarity}
+                  state={c}
+                  onWear={(id) => wearOnBench(zoomed.id, id)}
+                  onPreview={setChromaPreview}
+                />
+              ) : null;
             })()}
           </div>
         )}
