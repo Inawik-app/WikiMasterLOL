@@ -755,7 +755,23 @@
       var(--frame-b, var(--frame))
     );
   }
-  /* The chroma also washes over the art, like the recoloured skin in game. */
+  /* A chroma keeps the art as it is: its two colours run through the frame, and a band of
+     their light sweeps across the card now and then. */
+  .card[data-chroma] {
+    background: linear-gradient(
+        120deg,
+        var(--chroma-a),
+        color-mix(in oklab, var(--chroma-a) 45%, #15130e),
+        var(--chroma-b),
+        color-mix(in oklab, var(--chroma-b) 45%, #15130e),
+        var(--chroma-a)
+      )
+      0 0 / 300% 300%;
+    animation: chroma-frame 7s linear infinite;
+  }
+  @keyframes chroma-frame {
+    to { background-position: 300% 300%; }
+  }
   .card[data-chroma] .card__art::after,
   .anvil[data-chroma] .anvil__art::after {
     content: "";
@@ -763,11 +779,23 @@
     inset: 0;
     z-index: 1;
     border-radius: inherit;
-    background: linear-gradient(160deg, var(--chroma-a), var(--chroma-b));
-    mix-blend-mode: color;
-    opacity: 0.6;
-    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--chroma-a) 80%, transparent);
+    background: linear-gradient(
+        115deg,
+        transparent 38%,
+        color-mix(in oklab, var(--chroma-a) 70%, white) 46%,
+        color-mix(in oklab, var(--chroma-b) 70%, white) 54%,
+        transparent 62%
+      )
+      0 0 / 300% 100% no-repeat;
+    mix-blend-mode: soft-light;
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--chroma-a) 70%, transparent),
+      inset 0 0 18px -6px var(--chroma-b);
+    animation: chroma-shine 4.5s ease-in-out infinite;
     pointer-events: none;
+  }
+  @keyframes chroma-shine {
+    from { background-position: 120% 0; }
+    55%, to { background-position: -20% 0; }
   }
   /* From Émeraude up, light runs across the art. */
   .card:is([data-rank="6"], [data-rank="7"], [data-rank="8"], [data-rank="9"], [data-rank="10"]) {
@@ -805,6 +833,14 @@
     box-shadow:
       0 40px 80px -30px rgb(0 0 0 / 0.9),
       0 0 46px -14px var(--frame);
+  }
+  /* With a chroma, the glow around the opened card swings between its two colours. */
+  .anvil[data-chroma][open] {
+    animation: chroma-glow 5s ease-in-out infinite alternate;
+  }
+  @keyframes chroma-glow {
+    from { border-color: var(--chroma-a); box-shadow: 0 40px 80px -30px rgb(0 0 0 / 0.9), 0 0 50px -12px var(--chroma-a); }
+    to { border-color: var(--chroma-b); box-shadow: 0 40px 80px -30px rgb(0 0 0 / 0.9), 0 0 50px -12px var(--chroma-b); }
   }
 
   /* The corner mark of a skin with chromas: a split disc in the colours of the chroma worn,
@@ -2235,6 +2271,10 @@
       animation: none;
     }
     .card__art::before,
+    .card[data-chroma],
+    .anvil[data-chroma][open],
+    .card[data-chroma] .card__art::after,
+    .anvil[data-chroma] .anvil__art::after,
     .card__chroma,
     .pack__chroma,
     .gift-box,

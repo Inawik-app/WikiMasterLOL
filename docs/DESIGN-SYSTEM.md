@@ -69,7 +69,7 @@ Angles presque vifs : rayon de 2 à 4 px partout, jamais de pilule. Ombres port�
   - grande (`card--large`) ;
   - mystère (`card--locked`) : cadre et gemme seuls, ni image ni nom ; c'est l'état des cartes secrètes que personne n'a trouvées ;
   - rang (`data-rank` de 1 à 10) : le cadre prend le métal du rang ; reflet à partir d’Émeraude, pulsation à partir de Maître, cadre irisé pour Challenger ;
-  - chroma (`data-chroma` avec `--chroma-a` et `--chroma-b`) : cadre aux deux couleurs du chroma, illustration teintée ;
+  - chroma (`data-chroma` avec `--chroma-a` et `--chroma-b`) : les deux couleurs du chroma défilent dans le cadre, un reflet à leurs couleurs balaie la carte ; l’illustration garde ses couleurs d’origine ;
   - manquante (`card--missing`) : carte visible mais éteinte, pas encore dans la collection du joueur ;
   - dos (`card--back`) : face cachée sur l'établi, en laiton, sans indice de rareté ; la prochaine à retourner est éclairée.
 - **Râtelier** (`rack`) : les huit gemmes sur un rail de laiton, filtre de rareté avec compteurs.
