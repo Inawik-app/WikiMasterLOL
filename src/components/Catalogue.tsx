@@ -7,6 +7,7 @@ import { CHROMA_PRICE, essences, isSecret, PRICE, SECRET_RARITIES } from "@/lib/
 import { RANKS } from "@/lib/upgrades";
 import { createClient } from "@/lib/supabase/client";
 import { CardDialog } from "./CardDialog";
+import { ChromaPicker } from "./ChromaPicker";
 import { CardFace, cardClass, cardLabel, type FaceCard, type Look, lookProps } from "./CardFace";
 import { Gem, GemDefs } from "./Gem";
 
@@ -61,6 +62,8 @@ export function Catalogue({
   const [limit, setLimit] = useState(PAGE);
   const [opened, setOpened] = useState<CardItem | null>(null);
   const [favOnly, setFavOnly] = useState(false);
+  // Collection filters for chromas: skins that have some, and skins with a chroma to choose.
+  const [chromaFilter, setChromaFilter] = useState<"all" | "skins" | "pending">("all");
   const [sort, setSort] = useState<"rarity" | "recent" | "name">("rarity");
   const [buying, setBuying] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -125,11 +128,15 @@ export function Catalogue({
       if (it.kind === "secret") return source === "all" && type === "all" && !q && !mine && !foundOnly;
       if (source !== "all" && TYPE_SOURCE[it.card.type] !== source) return false;
       if (mine ? !it.owned || (favOnly && !it.fav) : foundOnly && !it.found) return false;
+      if (mine && chromaFilter === "skins" && !it.options) return false;
+      if (mine && chromaFilter === "pending" && !it.picks) return false;
       // Picking a gift: the cards the friend already has cannot be given, so they are not shown.
       if (select?.blocked.has(it.card.id)) return false;
       return (type === "all" || it.card.type === type) && (!q || searchIndex.get(it.key)!.includes(q));
     });
-  }, [items, searchIndex, source, type, query, mine, foundOnly, favOnly, select?.blocked]);
+  }, [items, searchIndex, source, type, query, mine, foundOnly, favOnly, chromaFilter, select?.blocked]);
+  // Chromas earned by duplicates and not chosen yet, all skins together.
+  const pendingChromas = state?.owned.reduce((sum, o) => sum + (o.picks ?? 0), 0) ?? 0;
 
   const rarityCount = useMemo(() => {
     const counts = Object.fromEntries(RARITIES.map((r) => [r, 0])) as Record<Rarity, number>;
@@ -210,24 +217,29 @@ export function Catalogue({
   // The star on the corner of a card: on the player's own cards, outside picking mode.
   const canStar = Boolean(state) && !friend && !select;
 
+  // Changes one owned card in the collection kept on the page.
+  const patchOwned = (id: string, changes: Partial<Owned>) =>
+    setState((s) => s && { ...s, owned: s.owned.map((o) => (o.id === id ? { ...o, ...changes } : o)) });
+
   // Wears a chroma, unlocking it first if a pick is left. Clicking the one worn takes it off.
   const wear = async (item: CardItem, chromaId: number) => {
     const unlocked = item.unlocked ?? [];
     const next = item.chroma === chromaId ? null : chromaId;
     const isNew = next !== null && !unlocked.includes(next);
     setNotice(null);
-    setOpened({
-      ...item,
+    const changes = {
       chroma: next ?? undefined,
       unlocked: isNew ? [...unlocked, next] : unlocked,
       picks: isNew ? (item.picks ?? 0) - 1 : item.picks,
-    });
-    const result = await pickChroma(item.card.id, next);
+    };
+    setOpened({ ...item, ...changes });
+    patchOwned(item.card.id, changes);
+    const result = await pickChroma(item.card.id, next).catch(() => ({ ok: false }));
     if (!result.ok) {
       setOpened(item);
       setNotice("Le chroma n'a pas été enregistré. Réessaie dans un instant.");
+      await refresh();
     }
-    await refresh();
   };
 
   // A locked chroma, with no pick left: it can be bought with essence, after a word of warning.
@@ -237,9 +249,9 @@ export function Catalogue({
     setNotice(null);
     const result = await buyChroma(item.card.id, chromaId).catch(() => ({ ok: false, reason: "unavailable" }) as const);
     if (result.ok) {
-      setOpened((current) =>
-        current?.card.id === item.card.id ? { ...current, chroma: chromaId, unlocked: [...(current.unlocked ?? []), chromaId] } : current,
-      );
+      const changes = { chroma: chromaId, unlocked: [...(item.unlocked ?? []), chromaId] };
+      setOpened((current) => (current?.card.id === item.card.id ? { ...current, ...changes } : current));
+      patchOwned(item.card.id, changes);
     } else {
       setNotice(result.reason === "not-enough" ? "Tu n'as pas assez d'essence." : "L'achat n'a pas abouti. Réessaie dans un instant.");
     }
@@ -262,35 +274,13 @@ export function Catalogue({
             </p>
           )}
           {opened.options && (
-            <div className="chromas">
-              <p>
-                {opened.picks
-                  ? `${opened.picks} ${opened.picks > 1 ? "chromas" : "chroma"} à débloquer : choisis parmi ceux qui sont verrouillés.`
-                  : `Chromas. Chaque doublon de cette carte en débloque un, au choix ; ou achète-en un pour ${essences(CHROMA_PRICE[opened.card.rarity])} (tu en as ${count.format(state.essence)}).`}
-              </p>
-              <ul>
-                {opened.options.map((option) => {
-                  const unlocked = opened.unlocked?.includes(option.id);
-                  return (
-                    <li key={option.id}>
-                      <button
-                        type="button"
-                        className="chromas__swatch"
-                        style={{ "--chroma-a": option.colors[0], "--chroma-b": option.colors[1] ?? option.colors[0] } as CSSProperties}
-                        aria-pressed={opened.chroma === option.id}
-                        aria-label={`${option.name}${unlocked ? "" : opened.picks ? ", à débloquer" : `, à acheter pour ${essences(CHROMA_PRICE[opened.card.rarity])}`}`}
-                        title={option.name}
-                        data-locked={!unlocked}
-                        disabled={!unlocked && !opened.picks && state.essence < CHROMA_PRICE[opened.card.rarity]}
-                        onClick={() =>
-                          unlocked || opened.picks ? wear(opened, option.id) : purchaseChroma(opened, option.id, option.name)
-                        }
-                      />
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
+            <ChromaPicker
+              rarity={opened.card.rarity}
+              state={{ options: opened.options, unlocked: opened.unlocked, chroma: opened.chroma, picks: opened.picks }}
+              essence={state.essence}
+              onWear={(id) => wear(opened, id)}
+              onBuy={(id, name) => purchaseChroma(opened, id, name)}
+            />
           )}
         </>
       ) : isSecret(opened.card.rarity) ? (
@@ -441,6 +431,34 @@ export function Catalogue({
               <span className="switch__track" aria-hidden="true" />
               Favoris
             </button>
+            {!friend && (
+              <button
+                type="button"
+                className="switch"
+                aria-pressed={chromaFilter === "skins"}
+                onClick={() => {
+                  setChromaFilter(chromaFilter === "skins" ? "all" : "skins");
+                  setLimit(PAGE);
+                }}
+              >
+                <span className="switch__track" aria-hidden="true" />
+                Skins à chromas
+              </button>
+            )}
+            {!friend && pendingChromas > 0 && (
+              <button
+                type="button"
+                className="switch switch--pending"
+                aria-pressed={chromaFilter === "pending"}
+                onClick={() => {
+                  setChromaFilter(chromaFilter === "pending" ? "all" : "pending");
+                  setLimit(PAGE);
+                }}
+              >
+                <span className="switch__track" aria-hidden="true" />
+                {pendingChromas > 1 ? `${pendingChromas} chromas à choisir` : "1 chroma à choisir"}
+              </button>
+            )}
           </div>
         )}
         {state && !mine && (
@@ -490,6 +508,25 @@ export function Catalogue({
                 >
                   <CardFace card={item.card} />
                 </button>
+                {/* A skin with chromas says so on its corner: the colours of the one worn, and a
+                    glowing mark when a chroma is waiting to be chosen. */}
+                {item.owned && item.options && (
+                  <span
+                    className="card__chroma"
+                    data-pending={Boolean(item.picks) && !friend}
+                    title={
+                      item.picks && !friend
+                        ? "Un chroma à choisir"
+                        : `Chromas : ${item.unlocked?.length ?? 0} sur ${item.options.length}`
+                    }
+                    style={
+                      {
+                        "--chroma-a": lookOf(item).colors?.[0] ?? "transparent",
+                        "--chroma-b": lookOf(item).colors?.[1] ?? lookOf(item).colors?.[0] ?? "transparent",
+                      } as CSSProperties
+                    }
+                  />
+                )}
                 {canStar && item.owned && (
                   <button
                     type="button"

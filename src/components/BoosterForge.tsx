@@ -2,7 +2,7 @@
 
 import type { User } from "@supabase/supabase-js";
 import { type CSSProperties, useCallback, useEffect, useState } from "react";
-import { claimSeal, forgeCard, openBooster, type OpenedCard, serverTime, setFavorite } from "@/app/actions";
+import { claimSeal, forgeCard, openBooster, type OpenedCard, pickChroma, serverTime, setFavorite } from "@/app/actions";
 import { boosterStock, MAX_STOCK } from "@/lib/booster";
 import { RARITIES, RARITY_LABEL, type Rarity } from "@/lib/card";
 import { essences, essenceWord, isSecret } from "@/lib/forge";
@@ -11,6 +11,7 @@ import { RANKS } from "@/lib/upgrades";
 import { createClient } from "@/lib/supabase/client";
 import { BoosterHistory } from "./BoosterHistory";
 import { CardDialog } from "./CardDialog";
+import { ChromaPicker } from "./ChromaPicker";
 import { CardFace, cardClass, cardLabel, type FaceCard } from "./CardFace";
 import { Gem, GemDefs } from "./Gem";
 
@@ -165,6 +166,30 @@ export function BoosterForge() {
     </button>
   );
 
+  // Wears a chroma of a card on the bench, unlocking it with the pick its duplicate just earned.
+  const wearOnBench = async (cardId: string, chromaId: number) => {
+    if (!pack) return;
+    const update = (opened: OpenedCard): OpenedCard => {
+      if (opened.card.id !== cardId || !opened.chromas) return opened;
+      const c = opened.chromas;
+      const next = c.chroma === chromaId ? undefined : chromaId;
+      const isNew = next !== undefined && !c.unlocked.includes(next);
+      return {
+        ...opened,
+        chromas: { ...c, chroma: next, unlocked: isNew ? [...c.unlocked, next] : c.unlocked, picks: isNew ? c.picks - 1 : c.picks },
+      };
+    };
+    const before = pack;
+    const after = { ...pack, cards: pack.cards.map(update) };
+    setPack(after);
+    const worn = after.cards.find((o) => o.card.id === cardId)?.chromas?.chroma ?? null;
+    const result = await pickChroma(cardId, worn).catch(() => ({ ok: false }));
+    if (!result.ok) {
+      setPack(before);
+      setMessage("Le chroma n'a pas été enregistré. Réessaie dans un instant.");
+    }
+  };
+
   const open = () => run("booster", openBooster);
   const claim = () =>
     run("seal", async () => {
@@ -251,9 +276,14 @@ export function BoosterForge() {
                       : opened.rank
                         ? `Doublon · rang ${RANKS[opened.rank - 1]}`
                         : opened.chroma
-                          ? "Doublon · un chroma à choisir"
+                          ? "Doublon · un chroma gagné"
                           : `Doublon · +${essences(opened.essence)}`}
                   </p>
+                  {opened.chromas && (
+                    <button type="button" className="pack__chroma" onClick={() => setZoomed(opened.card)}>
+                      {opened.chromas.picks ? "Choisir le chroma" : "Changer de chroma"}
+                    </button>
+                  )}
                 </li>
               ) : (
                 <li key={opened.card.id} className="pack__slot pack__slot--dealt" style={{ "--i": i } as CSSProperties}>
@@ -302,8 +332,23 @@ export function BoosterForge() {
         </>
       )}
 
-      <CardDialog card={zoomed} onClose={() => setZoomed(null)}>
-        {zoomed && <div className="anvil__own">{star(zoomed, "forge__secondary")}</div>}
+      <CardDialog
+        card={zoomed}
+        look={(() => {
+          const c = pack?.cards.find((o) => o.card.id === zoomed?.id)?.chromas;
+          return c ? { colors: c.options.find((option) => option.id === c.chroma)?.colors } : undefined;
+        })()}
+        onClose={() => setZoomed(null)}
+      >
+        {zoomed && (
+          <div className="anvil__own">
+            {star(zoomed, "forge__secondary")}
+            {(() => {
+              const c = pack?.cards.find((o) => o.card.id === zoomed.id)?.chromas;
+              return c ? <ChromaPicker rarity={zoomed.rarity} state={c} onWear={(id) => wearOnBench(zoomed.id, id)} /> : null;
+            })()}
+          </div>
+        )}
       </CardDialog>
 
       <div className="forge__actions">
