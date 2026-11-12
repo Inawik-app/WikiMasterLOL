@@ -61,6 +61,9 @@ export type Card = {
   icon?: boolean;
   // Art shown behind an icon, instead of a blurred wash of the icon itself.
   backdrop?: string;
+  // Champions and skins: their Data Dragon name ("Annie_7"). Riot’s own servers keep a copy of
+  // the loading screen and the splash there, used when CommunityDragon does not answer.
+  dd?: string;
   // CSS object-position for art that must be cropped.
   focus?: string;
   chromas?: Chroma[];

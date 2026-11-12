@@ -15,8 +15,8 @@ export function allCards(): Card[] {
 }
 
 // What the interface needs to draw a card: everything but the chromas.
-export function toFaceCard({ id, type, name, rarity, image, splash, subtitle, flavor, url, facts, frames, focus, icon, backdrop }: Card): FaceCard {
-  return { id, type, name, rarity, image, splash, subtitle, flavor, url, facts, frames, focus, icon, backdrop };
+export function toFaceCard({ id, type, name, rarity, image, splash, subtitle, flavor, url, facts, frames, focus, icon, backdrop, dd }: Card): FaceCard {
+  return { id, type, name, rarity, image, splash, subtitle, flavor, url, facts, frames, focus, icon, backdrop, dd };
 }
 
 // A card as it travels in a list (the catalogue, a collection): without its long texts, which

@@ -1,9 +1,8 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element -- hotlinked Riot art, see CardFace */
 import { type PointerEvent, type ReactNode, useEffect, useRef, useState } from "react";
 import { type CardType, RARITY_LABEL, SOURCE_LABEL, TYPE_LABEL, TYPE_SOURCE } from "@/lib/card";
-import { CardFace, cardClass, type FaceCard, isWide, type Look, lookProps, thumb } from "./CardFace";
+import { Art, CardFace, cardClass, ddSplash, type FaceCard, isWide, type Look, lookProps, thumb } from "./CardFace";
 import { Gem } from "./Gem";
 
 const LINK_LABEL: Partial<Record<CardType, string>> = {
@@ -119,7 +118,7 @@ export function CardDialog({
               onPointerMove={tilt}
               onPointerLeave={rest}
             >
-            <img src={thumb(card.splash ?? card.image, 1600)} alt="" />
+            <Art src={thumb(card.splash ?? card.image, 1600)} fallback={ddSplash(card)} />
             <span className="card__light" />
           </figure>
           <Gem rarity={card.rarity} className="anvil__gem" />

@@ -1,11 +1,11 @@
 /* eslint-disable @next/next/no-img-element -- card art is hotlinked from Riot CDNs; next/image would spend Vercel's image quota */
-import type { CSSProperties } from "react";
+import type { CSSProperties, ImgHTMLAttributes } from "react";
 import { type Card, RARITY_LABEL } from "@/lib/card";
 import { Gem } from "./Gem";
 
 export type FaceCard = Pick<
   Card,
-  "id" | "type" | "name" | "rarity" | "image" | "splash" | "subtitle" | "flavor" | "url" | "facts" | "frames" | "focus" | "icon" | "backdrop"
+  "id" | "type" | "name" | "rarity" | "image" | "splash" | "subtitle" | "flavor" | "url" | "facts" | "frames" | "focus" | "icon" | "backdrop" | "dd"
 >;
 
 // What an owned card wears on top of its rarity: a rank (ranked skins) or the two colours of a chroma.
@@ -19,6 +19,31 @@ export const lookProps = (look?: Look) => ({
     ? ({ "--chroma-a": look.colors[0], "--chroma-b": look.colors[1] ?? look.colors[0] } as CSSProperties)
     : undefined,
 });
+
+// Riot’s copies on Data Dragon, for a champion or a skin, when CommunityDragon fails.
+const DD = "https://ddragon.leagueoflegends.com/cdn/img/champion";
+export const ddLoading = (card: FaceCard) => (card.dd ? `${DD}/loading/${card.dd}.jpg` : undefined);
+export const ddSplash = (card: FaceCard) => (card.dd ? `${DD}/splash/${card.dd}.jpg` : undefined);
+
+// A hotlinked image that does not leave a broken icon: when it fails it switches to `fallback`,
+// and without one (or when that fails too) it hides. The ref catches the images that failed
+// before the page came alive, when no error handler was listening yet.
+export function Art({ fallback, ...props }: ImgHTMLAttributes<HTMLImageElement> & { fallback?: string }) {
+  const recover = (img: HTMLImageElement) => {
+    if (fallback && img.src !== fallback) img.src = fallback;
+    else img.style.visibility = "hidden";
+  };
+  return (
+    <img
+      alt=""
+      {...props}
+      onError={(event) => recover(event.currentTarget)}
+      ref={(img) => {
+        if (img?.complete && img.naturalWidth === 0 && img.currentSrc) recover(img);
+      }}
+    />
+  );
+}
 
 const fromLor = (card: FaceCard) => card.image.includes("dd.b.pvp.net");
 
@@ -67,30 +92,30 @@ export function CardFace({ card, locked, large }: { card: FaceCard; locked?: boo
         ) : isIcon(card) ? (
           <>
             {card.backdrop ? (
-              <img src={card.backdrop} alt="" loading="lazy" className="card__backdrop" />
+              <Art src={card.backdrop} loading="lazy" className="card__backdrop" />
             ) : (
-              <img src={src} alt="" loading="lazy" className="card__blur" />
+              <Art src={src} fallback={ddLoading(card)} loading="lazy" className="card__blur" />
             )}
-            <img src={src} alt="" loading="lazy" className="card__icon" />
+            <Art src={src} fallback={ddLoading(card)} loading="lazy" className="card__icon" />
           </>
         ) : isLandscape(card) ? (
           <>
-            <img src={src} alt="" loading="lazy" className="card__blur" />
-            <img src={src} alt="" loading="lazy" className="card__window" style={{ objectPosition: card.focus }} />
+            <Art src={src} fallback={ddLoading(card)} loading="lazy" className="card__blur" />
+            <Art src={src} fallback={ddLoading(card)} loading="lazy" className="card__window" style={{ objectPosition: card.focus }} />
           </>
         ) : card.frames ? (
           // Special border and signature overlays are drawn for the uncropped loading-screen art.
           <>
-            <img src={src} alt="" loading="lazy" className="card__blur" />
+            <Art src={src} fallback={ddLoading(card)} loading="lazy" className="card__blur" />
             <span className="card__portrait">
-              <img src={src} alt="" loading="lazy" />
+              <Art src={src} fallback={ddLoading(card)} loading="lazy" />
               {card.frames.map((frame) => (
-                <img key={frame} src={frame} alt="" loading="lazy" className="card__frame" />
+                <Art key={frame} src={frame} loading="lazy" className="card__frame" />
               ))}
             </span>
           </>
         ) : (
-          <img src={src} alt="" loading="lazy" className="card__full" />
+          <Art src={src} fallback={ddLoading(card)} loading="lazy" className="card__full" />
         )}
       </span>
       {!locked && (

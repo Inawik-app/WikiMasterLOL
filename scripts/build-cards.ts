@@ -464,8 +464,9 @@ function accountCards(cards: Card[]): Card[] {
       rarity: "transcendent",
       image: `${CDRAGON}/default/v1/profile-icons/${account.icon}.jpg`,
       icon: true,
-      backdrop: art.image,
-      splash: art.splash,
+      // Riot’s own copies when there are some: these cards must never show a broken image.
+      backdrop: art.dd ? `${DDRAGON}/cdn/img/champion/loading/${art.dd}.jpg` : art.image,
+      splash: art.dd ? `${DDRAGON}/cdn/img/champion/splash/${art.dd}.jpg` : art.splash,
       flavor: "Un invocateur bien réel, croisé un jour dans la Faille. Les cartes les plus rares du jeu ne sortent pas d’un studio.",
       facts: [
         ["Riot ID", account.riotId],
@@ -483,10 +484,15 @@ async function withLiveImages(cards: Card[]): Promise<Card[]> {
   for (let i = 0; i < cards.length; i += 30) {
     const batch = cards.slice(i, i + 30);
     // A browser does not draw an SVG that is not served as one.
+    // Only an answer that says the file is gone counts as dead. A server that is down or slow
+    // (5xx, timeout) says nothing about the file: the card is kept, or a CommunityDragon outage
+    // would wipe whole families of cards from the catalogue.
     const live = (url: string) =>
-      fetch(url, { method: "HEAD" }).then(
-        (r) => r.ok && (!/\.svg(\?|$)/i.test(url) || (r.headers.get("content-type") ?? "").includes("svg")),
-        () => false,
+      fetch(url, { method: "HEAD", signal: AbortSignal.timeout(20_000) }).then(
+        (r) =>
+          r.status >= 500 ||
+          (r.ok && (!/\.svg(\?|$)/i.test(url) || (r.headers.get("content-type") ?? "").includes("svg"))),
+        () => true,
       );
     const ok = await Promise.all(batch.map((c) => (c.image.startsWith("/") ? true : live(c.image))));
     // A missing splash only costs the wide view: keep the card, drop the splash.
@@ -618,6 +624,7 @@ async function build(): Promise<Card[]> {
       // The "vintage" loading screen is the one with the skin's special border baked in.
       image: cdragonAsset(s.loadScreenVintagePath || s.loadScreenPath || s.splashPath),
       splash: cdragonAsset(s.splashPath),
+      dd: championById.get(championId) ? `${championById.get(championId).id}_${s.id % 1000}` : undefined,
     };
     if (s.isBase) {
       return [
@@ -653,6 +660,7 @@ async function build(): Promise<Card[]> {
         rarity,
         image: cdragonAsset(t.loadScreenPath),
         splash: cdragonAsset(t.splashPath),
+        dd: images.dd && `${images.dd.split("_")[0]}_${t.id % 1000}`,
         flavor: t.description || undefined,
         frames: skinFrames(t.skinAugments),
       }));

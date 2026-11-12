@@ -50,8 +50,13 @@ async function celebrate(admin: SupabaseClient, userId: string, cardIds: (string
   if (!secret.length) return;
   const { data: profile } = await admin.from("profiles").select("username").eq("id", userId).single();
   for (const card of secret) {
-    const { count } = await admin.from("collection").select("*", { count: "exact", head: true }).eq("card_id", card.id);
-    if (count !== 1) continue;
+    // The first player ever to get it, kept even after the card was given away (migration
+    // 0012). Without that table, being its only owner is the best guess.
+    const { data: first, error } = await admin.from("discoverers").select("user_id").eq("card_id", card.id).maybeSingle();
+    if (error) {
+      const { count } = await admin.from("collection").select("*", { count: "exact", head: true }).eq("card_id", card.id);
+      if (count !== 1) continue;
+    } else if (first?.user_id !== userId) continue;
     const odds = fromBooster
       ? {
           rarity: oddsText(chancePerBooster(card.rarity)),

@@ -12,7 +12,8 @@ Postgres chez Supabase, palier gratuit (500 Mo, mise en pause après 7 jours san
 - `profiles` porte aussi la réserve de boosters (`booster_anchor` : les boosters se comptent à partir de cet instant, un par heure, huit au plus) et l'essence.
 - `profiles` porte enfin le sceau de forge : `seal_days` (jours joués), `seal_last_day` (dernier jour compté, heure de Paris), `seal_claimed_day` (dernier palier récupéré).
 - `claim_seal` et `spend_essence` — fonctions qui récupèrent une récompense du sceau et qui paient une carte en essence, chacune en une transaction. Seul le serveur peut les appeler.
-- `discoveries` — vue : le premier joueur à avoir obtenu chaque carte. Sert à révéler les cartes secrètes au groupe.
+- `discoverers` — le premier joueur à avoir obtenu chaque carte, rempli par un déclencheur à chaque nouvelle ligne de `collection` ; un don déplace la carte sans toucher à son découvreur.
+- `discoveries` — vue sur `discoverers` avec le pseudo : sert à révéler les cartes secrètes au groupe et à afficher « découverte par ».
 - `open_booster` — fonction qui ouvre un booster en une seule transaction : elle retire un booster de la réserve, ajoute les cartes, convertit les doublons en essence. Seul le serveur peut l'appeler.
 - `friendships` — une amitié = deux lignes `(user_id, friend_id)`, une dans chaque sens, écrites et supprimées ensemble par le serveur. Pas de demande à accepter.
 - `give` — fonction qui donne des cartes et de l'essence à un ami en une transaction : la ligne de `collection` change de propriétaire. Seul le serveur peut l'appeler.
