@@ -23,24 +23,26 @@ export const lookProps = (look?: Look) => ({
 // Riot’s copies on Data Dragon, for a champion or a skin, when CommunityDragon fails.
 const DD = "https://ddragon.leagueoflegends.com/cdn/img/champion";
 export const ddLoading = (card: FaceCard) => (card.dd ? `${DD}/loading/${card.dd}.jpg` : undefined);
-export const ddSplash = (card: FaceCard) => (card.dd ? `${DD}/splash/${card.dd}.jpg` : undefined);
+// The centred cut of the splash, as on CommunityDragon: the champion stays clear of the text.
+export const ddSplash = (card: FaceCard) => (card.dd ? `${DD}/centered/${card.dd}.jpg` : undefined);
 
 // A hotlinked image that does not leave a broken icon: when it fails it switches to `fallback`,
-// and without one (or when that fails too) it hides. The ref catches the images that failed
-// before the page came alive, when no error handler was listening yet.
+// and without one (or when that fails too) it hides.
+// shortcut: an image that fails before the page comes alive (no handler listening yet) stays
+// broken. Rare now that Riot’s copies come first; checking `complete` or `decode()` on mount
+// misfires on images that have not started loading.
 export function Art({ fallback, ...props }: ImgHTMLAttributes<HTMLImageElement> & { fallback?: string }) {
-  const recover = (img: HTMLImageElement) => {
-    if (fallback && img.src !== fallback) img.src = fallback;
+  // `failed` is the address that failed: a late report about an address already replaced is ignored.
+  const recover = (img: HTMLImageElement, failed: string) => {
+    if (img.src !== failed) return;
+    if (fallback && failed !== new URL(fallback, location.href).href) img.src = fallback;
     else img.style.visibility = "hidden";
   };
   return (
     <img
       alt=""
       {...props}
-      onError={(event) => recover(event.currentTarget)}
-      ref={(img) => {
-        if (img?.complete && img.naturalWidth === 0 && img.currentSrc) recover(img);
-      }}
+      onError={(event) => recover(event.currentTarget, event.currentTarget.src)}
     />
   );
 }
@@ -83,7 +85,12 @@ export function cardClass(card: FaceCard, { locked, large }: { locked?: boolean;
 // The inside of a card. The wrapper (button in the grid, div on the anvil) carries
 // `cardClass` and `data-rarity`.
 export function CardFace({ card, locked, large }: { card: FaceCard; locked?: boolean; large?: boolean }) {
-  const src = thumb(card.image, large ? 900 : 480);
+  // Champions and skins load from Riot’s own servers first: CommunityDragon can take twenty
+  // seconds per image when it is struggling. Its copy (with the special borders of some skins)
+  // stays as the fallback.
+  const own = thumb(card.image, large ? 900 : 480);
+  const src = ddLoading(card) ?? own;
+  const backup = card.dd ? own : undefined;
   return (
     <>
       <span className="card__art">
@@ -94,28 +101,28 @@ export function CardFace({ card, locked, large }: { card: FaceCard; locked?: boo
             {card.backdrop ? (
               <Art src={card.backdrop} loading="lazy" className="card__backdrop" />
             ) : (
-              <Art src={src} fallback={ddLoading(card)} loading="lazy" className="card__blur" />
+              <Art src={src} fallback={backup} loading="lazy" className="card__blur" />
             )}
-            <Art src={src} fallback={ddLoading(card)} loading="lazy" className="card__icon" />
+            <Art src={src} fallback={backup} loading="lazy" className="card__icon" />
           </>
         ) : isLandscape(card) ? (
           <>
-            <Art src={src} fallback={ddLoading(card)} loading="lazy" className="card__blur" />
-            <Art src={src} fallback={ddLoading(card)} loading="lazy" className="card__window" style={{ objectPosition: card.focus }} />
+            <Art src={src} fallback={backup} loading="lazy" className="card__blur" />
+            <Art src={src} fallback={backup} loading="lazy" className="card__window" style={{ objectPosition: card.focus }} />
           </>
         ) : card.frames ? (
           // Special border and signature overlays are drawn for the uncropped loading-screen art.
           <>
-            <Art src={src} fallback={ddLoading(card)} loading="lazy" className="card__blur" />
+            <Art src={src} fallback={backup} loading="lazy" className="card__blur" />
             <span className="card__portrait">
-              <Art src={src} fallback={ddLoading(card)} loading="lazy" />
+              <Art src={src} fallback={backup} loading="lazy" />
               {card.frames.map((frame) => (
                 <Art key={frame} src={frame} loading="lazy" className="card__frame" />
               ))}
             </span>
           </>
         ) : (
-          <Art src={src} fallback={ddLoading(card)} loading="lazy" className="card__full" />
+          <Art src={src} fallback={backup} loading="lazy" className="card__full" />
         )}
       </span>
       {!locked && (

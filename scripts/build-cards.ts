@@ -466,7 +466,7 @@ function accountCards(cards: Card[]): Card[] {
       icon: true,
       // Riot’s own copies when there are some: these cards must never show a broken image.
       backdrop: art.dd ? `${DDRAGON}/cdn/img/champion/loading/${art.dd}.jpg` : art.image,
-      splash: art.dd ? `${DDRAGON}/cdn/img/champion/splash/${art.dd}.jpg` : art.splash,
+      splash: art.dd ? `${DDRAGON}/cdn/img/champion/centered/${art.dd}.jpg` : art.splash,
       flavor: "Un invocateur bien réel, croisé un jour dans la Faille. Les cartes les plus rares du jeu ne sortent pas d’un studio.",
       facts: [
         ["Riot ID", account.riotId],

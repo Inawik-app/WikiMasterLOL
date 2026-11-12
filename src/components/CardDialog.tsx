@@ -118,7 +118,11 @@ export function CardDialog({
               onPointerMove={tilt}
               onPointerLeave={rest}
             >
-            <Art src={thumb(card.splash ?? card.image, 1600)} fallback={ddSplash(card)} />
+            {/* Riot’s copy of the splash first (same artwork, much faster), CommunityDragon’s as fallback. */}
+            <Art
+              src={ddSplash(card) ?? thumb(card.splash ?? card.image, 1600)}
+              fallback={card.dd ? (card.splash ?? card.image) : undefined}
+            />
             <span className="card__light" />
           </figure>
           <Gem rarity={card.rarity} className="anvil__gem" />
