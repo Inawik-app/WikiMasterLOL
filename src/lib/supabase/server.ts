@@ -18,8 +18,12 @@ export async function currentUser() {
       },
     },
   });
-  const { data } = await supabase.auth.getUser();
-  return data.user;
+  // getClaims checks the signature of the session token on the spot when the project signs its
+  // tokens with an asymmetric key, without a round trip to Supabase Auth on every action;
+  // otherwise it asks Supabase Auth itself, like getUser. Either way the identity is verified.
+  const { data } = await supabase.auth.getClaims();
+  const id = data?.claims?.sub;
+  return id ? { id } : null;
 }
 
 // Client with the service role key: it bypasses row level security, so it must only ever be

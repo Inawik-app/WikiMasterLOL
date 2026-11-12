@@ -44,6 +44,7 @@ Meraki est la source la plus fragile (bénévole, parfois en retard de plusieurs
 - 2026-10-12 — Les types `Card` et `Rarity` vivent dans `src/lib/card.ts`, partagés par le script et le site.
 - 2026-10-12 — Tirage dans une Server Action (`src/app/actions.ts`, règles dans `src/lib/booster.ts`) avec la clé de service, écriture interdite aux clients par RLS : empêche de s'offrir des cartes depuis le navigateur. L'enregistrement, lui, passe par une fonction SQL (`open_booster`) pour que le retrait du booster et l'ajout des cartes soient indivisibles : un double clic ne peut pas ouvrir deux boosters pour le prix d'un.
 - 2026-10-12 — Images servies depuis les CDN Riot : pas de stockage, pas de quota. Risque accepté : une URL peut changer à un patch, `npm run cards` la régénère.
+- 2026-11-12 — Fonctions Vercel à Paris (`regions` dans `vercel.json`), près de la base Supabase en Europe : chaque requête évite l'aller-retour vers les États-Unis. Les annonces Discord partent après la réponse (`after`), l'identité se vérifie avec `getClaims`.
 - 2026-11-12 — CommunityDragon tombe parfois en panne partielle. Les champions et skins portent leur nom Data Dragon (`dd`) : une image qui ne charge pas bascule sur la copie officielle de Riot (`Art` dans `CardFace.tsx`), une image sans copie se masque au lieu d’afficher une icône cassée.
 
 ## 4. Qui a le droit de toucher quoi ?

@@ -1,5 +1,6 @@
 "use server";
 
+import { after } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { FaceCard } from "@/components/CardFace";
 import { drawBooster, ESSENCE } from "@/lib/booster";
@@ -120,21 +121,25 @@ export async function openBooster(): Promise<BoosterResult> {
   }
 
   const rows = data as { card: string; outcome: "new" | "essence" | "rank" | "chroma"; level: number | null }[];
-  // Kept for the weekly recap, which compares each player's draws with the odds. Not vital:
-  // if it fails, the booster is opened all the same.
-  await s.admin.from("draws").insert(drawn.map((d) => ({ user_id: s.user.id, card_id: d.id, rarity: d.rarity })));
-  await celebrate(s.admin, s.user.id, rows.filter((row) => row.outcome === "new").map((row) => row.card), true);
-  const climbed = rows.filter((row) => row.outcome === "rank" && (row.level ?? 0) >= ANNOUNCED_CARD_RANK);
-  if (climbed.length && process.env.DISCORD_WEBHOOK_URL) {
-    const player = await usernameOf(s.admin, s.user.id);
-    for (const row of climbed) await announceCardRank(player, cards.get(row.card)!, RANKS[row.level! - 1]);
-  }
-  // So that the bench shows the right star on a duplicate, and can offer the chroma it earned.
-  const { data: owned } = await s.admin
-    .from("collection")
-    .select("card_id, favorite, chromas, chroma, chroma_picks")
-    .eq("user_id", s.user.id)
-    .in("card_id", rows.map((row) => row.card));
+  // Discord announcements go out after the answer: the player does not wait for them.
+  after(async () => {
+    await celebrate(s.admin, s.user.id, rows.filter((row) => row.outcome === "new").map((row) => row.card), true);
+    const climbed = rows.filter((row) => row.outcome === "rank" && (row.level ?? 0) >= ANNOUNCED_CARD_RANK);
+    if (climbed.length && process.env.DISCORD_WEBHOOK_URL) {
+      const player = await usernameOf(s.admin, s.user.id);
+      for (const row of climbed) await announceCardRank(player, cards.get(row.card)!, RANKS[row.level! - 1]);
+    }
+  });
+  const [, { data: owned }] = await Promise.all([
+    // Kept for the weekly recap, which compares each player's draws with the odds.
+    s.admin.from("draws").insert(drawn.map((d) => ({ user_id: s.user.id, card_id: d.id, rarity: d.rarity }))),
+    // So that the bench shows the right star on a duplicate, and can offer the chroma it earned.
+    s.admin
+      .from("collection")
+      .select("card_id, favorite, chromas, chroma, chroma_picks")
+      .eq("user_id", s.user.id)
+      .in("card_id", rows.map((row) => row.card)),
+  ]);
   return {
     ok: true,
     cards: rows.map((row) => {
@@ -181,10 +186,12 @@ export async function claimSeal(): Promise<SealResult> {
     console.error("claim_seal failed:", error.code);
     return { ok: false, reason: "unavailable" };
   }
-  await celebrate(s.admin, s.user.id, [cardId]);
-  if (process.env.DISCORD_WEBHOOK_URL) {
-    await announceSeal(await usernameOf(s.admin, s.user.id), day, cardId ? cardById().get(cardId)! : null);
-  }
+  after(async () => {
+    await celebrate(s.admin, s.user.id, [cardId]);
+    if (process.env.DISCORD_WEBHOOK_URL) {
+      await announceSeal(await usernameOf(s.admin, s.user.id), day, cardId ? cardById().get(cardId)! : null);
+    }
+  });
   return { ok: true, card: cardId ? toFaceCard(cardById().get(cardId)!) : null, essence };
 }
 
@@ -200,7 +207,7 @@ async function pay(admin: SupabaseClient, userId: string, cardId: string, rarity
     console.error("spend_essence failed:", error.code);
     return { ok: false, reason: "unavailable" };
   }
-  await celebrate(admin, userId, [cardId]);
+  after(() => celebrate(admin, userId, [cardId]));
   return { ok: true, card: toFaceCard(cardById().get(cardId)!) };
 }
 
@@ -479,7 +486,7 @@ export async function giveToFriend(friendId: string, cardIds: string[], essence:
   await s.admin
     .from("gifts")
     .insert({ from_id: s.user.id, to_id: friendId, cards: cards.length, essence: amount, card_ids: cards });
-  await announceGift(name(s.user.id), name(friendId), cards.length, amount);
+  after(() => announceGift(name(s.user.id), name(friendId), cards.length, amount));
   return { ok: true };
 }
 

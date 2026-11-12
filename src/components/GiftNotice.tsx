@@ -20,11 +20,18 @@ export function GiftNotice() {
   const read = useCallback(async () => setGifts(await pendingGifts().catch(() => [])), []);
   useEffect(() => {
     if (!supabase) return;
+    // Server actions run one after the other: the check waits a moment, so that the page's own
+    // data comes first.
+    let timer: ReturnType<typeof setTimeout> | undefined;
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) read();
+      clearTimeout(timer);
+      if (session) timer = setTimeout(read, 2000);
       else setGifts([]);
     });
-    return () => data.subscription.unsubscribe();
+    return () => {
+      clearTimeout(timer);
+      data.subscription.unsubscribe();
+    };
   }, [supabase, read]);
 
   useEffect(() => {
